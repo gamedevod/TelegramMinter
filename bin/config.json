@@ -1,4 +1,12 @@
 {
+  "api_base_url": "https://stickerdom.store",
+  "api_key": "",
+  "theme": "default",
+  "language": "ru",
+  "timeout": 30,
+  "retry_count": 3,
+  "use_proxy": false,
+  "proxy_url": "",
   "test_mode": true,
   "test_address": "UQD06XNOAQw5ZYSINOfzuMLTQnBO8SX4ae05XqMmS9ikjP4N",
   "api_id": ,
@@ -8,16 +16,16 @@
   "token_api_url": "https://api.stickerdom.store/api/v1",
   "accounts": [
     {
-      "auth_token": "",
-      "seed_phrase": "el access",
+      "name": "Account 1 - Telegram Auth",
+      "auth_token": ".kwRKVRv39td-XGeEsA7H8JxFkD-QMmXHigxWIqsfoHY",
+      "phone_number": "+",
+      "seed_phrase": "",
       "threads": 1,
-      "collection": 1,
-      "character": 25,
+      "collection": 4,
+      "character": 15,
       "currency": "TON",
       "count": 1,
-      "max_transactions": 1,
-      "name": "Account 1 - Telegram Auth",
-      "phone_number": ""
+      "max_transactions": 1
     }
   ]
-} 
+}

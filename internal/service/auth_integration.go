@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"stickersbot/internal/config"
 	"stickersbot/internal/telegram"
@@ -25,12 +28,28 @@ func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 		if ai.needsTelegramAuth(account) {
 			log.Printf("🔐 Авторизация Telegram для аккаунта: %s", account.Name)
 
+			// Определяем путь к файлу сессии
+			sessionFile := account.SessionFile
+			if sessionFile == "" {
+				// Создаем имя файла сессии на основе номера телефона
+				cleanPhone := strings.ReplaceAll(account.PhoneNumber, "+", "")
+				sessionFile = filepath.Join("sessions", fmt.Sprintf("%s.session", cleanPhone))
+			}
+
+			// Создаем директорию для сессий если её нет
+			sessionDir := filepath.Dir(sessionFile)
+			if err := os.MkdirAll(sessionDir, 0755); err != nil {
+				return fmt.Errorf("создание директории сессий %s: %w", sessionDir, err)
+			}
+
+			log.Printf("📁 Session файл будет создан/использован: %s", sessionFile)
+
 			// Создаем сервис авторизации с общими параметрами
 			authService := telegram.NewAuthService(
 				ai.config.APIId,
 				ai.config.APIHash,
 				account.PhoneNumber,
-				account.SessionFile,
+				sessionFile,
 				ai.config.BotUsername,
 				ai.config.WebAppURL,
 				ai.config.TokenAPIURL,
@@ -50,6 +69,11 @@ func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 		} else {
 			log.Printf("⚠️  Аккаунт %s не настроен для Telegram авторизации", account.Name)
 		}
+	}
+
+	// Сохраняем конфигурацию с полученными токенами
+	if err := ai.saveConfig(); err != nil {
+		log.Printf("⚠️  Не удалось сохранить конфигурацию: %v", err)
 	}
 
 	return nil
@@ -88,4 +112,9 @@ func (ai *AuthIntegration) hasTelegramAuth(account config.Account) bool {
 // needsTelegramAuth проверяет, нужна ли Telegram авторизация для аккаунта
 func (ai *AuthIntegration) needsTelegramAuth(account config.Account) bool {
 	return account.AuthToken == "" && ai.hasTelegramAuth(account)
+}
+
+// saveConfig сохраняет конфигурацию в файл
+func (ai *AuthIntegration) saveConfig() error {
+	return ai.config.Save("config.json")
 }
