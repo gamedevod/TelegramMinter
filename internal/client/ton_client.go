@@ -52,8 +52,18 @@ func NewTONClient(seedPhrase string) (*TONClient, error) {
 	}, nil
 }
 
-// SendTON отправляет TON транзакцию
-func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64, comment string, testMode bool, testAddress string) error {
+// TransactionResult структура результата транзакции
+type TransactionResult struct {
+	FromAddress   string
+	ToAddress     string
+	TransactionID string
+	Amount        int64
+	Comment       string
+	Success       bool
+}
+
+// SendTON отправляет TON транзакцию и возвращает информацию о ней
+func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64, comment string, testMode bool, testAddress string) (*TransactionResult, error) {
 	// Если тестовый режим, используем тестовый адрес
 	if testMode && testAddress != "" {
 		toAddress = testAddress
@@ -62,16 +72,36 @@ func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64,
 	// Парсим адрес получателя
 	addr, err := address.ParseAddr(toAddress)
 	if err != nil {
-		return fmt.Errorf("ошибка парсинга адреса: %v", err)
+		return nil, fmt.Errorf("ошибка парсинга адреса: %v", err)
 	}
 
-	// Используем простой метод Transfer
+	// Получаем адрес отправителя
+	fromAddr := c.wallet.WalletAddress()
+
+	// Отправляем транзакцию
 	err = c.wallet.Transfer(ctx, addr, tlb.FromNanoTONU(uint64(amount)), comment)
 	if err != nil {
-		return fmt.Errorf("ошибка отправки транзакции: %v", err)
+		return &TransactionResult{
+			FromAddress:   fromAddr.String(),
+			ToAddress:     toAddress,
+			TransactionID: "",
+			Amount:        amount,
+			Comment:       comment,
+			Success:       false,
+		}, fmt.Errorf("ошибка отправки транзакции: %v", err)
 	}
 
-	return nil
+	// Возвращаем результат с временным ID
+	result := &TransactionResult{
+		FromAddress:   fromAddr.String(),
+		ToAddress:     toAddress,
+		TransactionID: fmt.Sprintf("tx_%d_%s", amount, comment), // Временный ID
+		Amount:        amount,
+		Comment:       comment,
+		Success:       true,
+	}
+
+	return result, nil
 }
 
 // GetBalance получает баланс кошелька

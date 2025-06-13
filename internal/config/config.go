@@ -7,14 +7,15 @@ import (
 
 // Account структура для отдельного аккаунта
 type Account struct {
-	Name       string `json:"name"`
-	AuthToken  string `json:"auth_token"`
-	SeedPhrase string `json:"seed_phrase"`
-	Threads    int    `json:"threads"`
-	Collection int    `json:"collection"`
-	Character  int    `json:"character"`
-	Currency   string `json:"currency"`
-	Count      int    `json:"count"`
+	Name            string `json:"name"`
+	AuthToken       string `json:"auth_token"`
+	SeedPhrase      string `json:"seed_phrase"`
+	Threads         int    `json:"threads"`
+	Collection      int    `json:"collection"`
+	Character       int    `json:"character"`
+	Currency        string `json:"currency"`
+	Count           int    `json:"count"`
+	MaxTransactions int    `json:"max_transactions"` // Максимальное количество успешных транзакций
 }
 
 // Config структура конфигурации приложения
@@ -56,14 +57,15 @@ func Default() *Config {
 		TestAddress: "",
 		Accounts: []Account{
 			{
-				Name:       "Account 1",
-				AuthToken:  "",
-				SeedPhrase: "",
-				Threads:    1,
-				Collection: 25,
-				Character:  1,
-				Currency:   "TON",
-				Count:      5,
+				Name:            "Account 1",
+				AuthToken:       "",
+				SeedPhrase:      "",
+				Threads:         1,
+				Collection:      25,
+				Character:       1,
+				Currency:        "TON",
+				Count:           5,
+				MaxTransactions: 10, // По умолчанию 10 транзакций
 			},
 		},
 	}

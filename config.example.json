@@ -30,7 +30,8 @@
       "collection": 4,
       "character": 15,
       "currency": "TON",
-      "count": 5
+      "count": 5,
+      "max_transactions": 10
     },
     {
       "name": "Account 2", 
@@ -40,7 +41,8 @@
       "collection": 25,
       "character": 1,
       "currency": "TON",
-      "count": 3
+      "count": 3,
+      "max_transactions": 5
     }
   ]
 } 

@@ -76,3 +76,16 @@ type AppState struct {
 	IsRunning    bool          `json:"is_running"`
 	Statistics   *Statistics   `json:"statistics"`
 }
+
+// TransactionLog структура для логирования транзакций
+type TransactionLog struct {
+	Timestamp     time.Time `json:"timestamp"`
+	AccountName   string    `json:"account_name"`
+	OrderID       string    `json:"order_id"`
+	Amount        int64     `json:"amount"`
+	Currency      string    `json:"currency"`
+	FromAddress   string    `json:"from_address"`
+	ToAddress     string    `json:"to_address"`
+	TransactionID string    `json:"transaction_id"`
+	TestMode      bool      `json:"test_mode"`
+}

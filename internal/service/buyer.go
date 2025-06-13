@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -13,31 +15,43 @@ import (
 
 // AccountWorker структура для работы с отдельным аккаунтом
 type AccountWorker struct {
-	client   *client.HTTPClient
-	account  config.Account
-	testMode bool
-	testAddr string
-	workerID int
+	client           *client.HTTPClient
+	account          config.Account
+	testMode         bool
+	testAddr         string
+	workerID         int
+	transactionCount int          // Счетчик успешных транзакций
+	isActive         bool         // Флаг активности аккаунта
+	mu               sync.RWMutex // Мьютекс для безопасного доступа к счетчикам
 }
 
 // BuyerService сервис для покупки стикеров
 type BuyerService struct {
-	client     *client.HTTPClient
-	config     *config.Config
-	statistics *types.Statistics
-	isRunning  bool
-	cancel     context.CancelFunc
-	mu         sync.RWMutex
-	logChan    chan string
+	client         *client.HTTPClient
+	config         *config.Config
+	statistics     *types.Statistics
+	isRunning      bool
+	cancel         context.CancelFunc
+	mu             sync.RWMutex
+	logChan        chan string
+	transactionLog *os.File // Файл для логирования транзакций
 }
 
 // NewBuyerService создает новый сервис покупки
 func NewBuyerService(cfg *config.Config) *BuyerService {
+	// Создаем файл для логирования транзакций
+	logFile, err := os.OpenFile("transactions.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Printf("⚠️ Не удалось создать файл логов транзакций: %v\n", err)
+		logFile = nil
+	}
+
 	return &BuyerService{
-		client:     client.New(),
-		config:     cfg,
-		statistics: &types.Statistics{},
-		logChan:    make(chan string, 1000),
+		client:         client.New(),
+		config:         cfg,
+		statistics:     &types.Statistics{},
+		logChan:        make(chan string, 1000),
+		transactionLog: logFile,
 	}
 }
 
@@ -99,11 +113,13 @@ func (bs *BuyerService) Start() error {
 			workerCounter++
 
 			accountWorker := &AccountWorker{
-				client:   client.New(),
-				account:  account,
-				testMode: bs.config.TestMode,
-				testAddr: bs.config.TestAddress,
-				workerID: workerCounter,
+				client:           client.New(),
+				account:          account,
+				testMode:         bs.config.TestMode,
+				testAddr:         bs.config.TestAddress,
+				workerID:         workerCounter,
+				transactionCount: 0,
+				isActive:         true,
 			}
 
 			go bs.accountWorker(ctx, &wg, accountWorker, accountIndex+1)
@@ -135,6 +151,18 @@ func (bs *BuyerService) accountWorker(ctx context.Context, wg *sync.WaitGroup, w
 			bs.logChan <- fmt.Sprintf("🔄 Поток %d (Аккаунт %d '%s') завершен", worker.workerID, accountNum, worker.account.Name)
 			return
 		default:
+			// Проверяем активность аккаунта
+			worker.mu.RLock()
+			isActive := worker.isActive
+			txCount := worker.transactionCount
+			worker.mu.RUnlock()
+
+			if !isActive {
+				bs.logChan <- fmt.Sprintf("🛑 Поток %d (Аккаунт %d '%s') остановлен: достигнут лимит транзакций (%d/%d)",
+					worker.workerID, accountNum, worker.account.Name, txCount, worker.account.MaxTransactions)
+				return
+			}
+
 			bs.performAccountBuy(worker, accountNum)
 			time.Sleep(100 * time.Millisecond) // Небольшая задержка между запросами
 		}
@@ -206,17 +234,61 @@ func (bs *BuyerService) handleAccountResponse(resp *client.BuyStickersResponse, 
 
 		bs.logChan <- fmt.Sprintf("⚠️ Поток %d (Аккаунт %d '%s'): Неуспешный запрос (статус %d)", worker.workerID, accountNum, worker.account.Name, resp.StatusCode)
 	} else {
+		// Успешный запрос
 		bs.mu.Lock()
 		bs.statistics.SuccessRequests++
-		if withTON && resp.OrderID != "" {
-			bs.statistics.SentTransactions++
-		}
 		bs.mu.Unlock()
 
-		if withTON && resp.OrderID != "" {
-			bs.logChan <- fmt.Sprintf("✅ Поток %d (Аккаунт %d '%s'): Успешная покупка и отправка TON! OrderID: %s, Сумма: %.9f TON, Кошелек: %s",
-				worker.workerID, accountNum, worker.account.Name, resp.OrderID, float64(resp.TotalAmount)/1000000000, resp.Wallet)
+		// Обрабатываем транзакцию если она была отправлена
+		if withTON && resp.TransactionSent && resp.TransactionResult != nil {
+			// Обновляем глобальную статистику
+			bs.mu.Lock()
+			bs.statistics.SentTransactions++
+			bs.mu.Unlock()
+
+			// Обновляем счетчик транзакций для аккаунта
+			worker.mu.Lock()
+			worker.transactionCount++
+			currentCount := worker.transactionCount
+
+			// Проверяем, достиг ли аккаунт лимита транзакций
+			if worker.account.MaxTransactions > 0 && currentCount >= worker.account.MaxTransactions {
+				worker.isActive = false
+				bs.logChan <- fmt.Sprintf("🛑 Аккаунт %d '%s' достиг лимита транзакций (%d/%d) и будет остановлен",
+					accountNum, worker.account.Name, currentCount, worker.account.MaxTransactions)
+			}
+			worker.mu.Unlock()
+
+			// Логируем информацию о транзакции
+			txResult := resp.TransactionResult
+			bs.logChan <- fmt.Sprintf("💰 Поток %d (Аккаунт %d '%s'): Транзакция отправлена!", worker.workerID, accountNum, worker.account.Name)
+			bs.logChan <- fmt.Sprintf("   📤 С адреса: %s", txResult.FromAddress)
+			bs.logChan <- fmt.Sprintf("   📥 На адрес: %s", txResult.ToAddress)
+			bs.logChan <- fmt.Sprintf("   💰 Сумма: %.9f TON", float64(txResult.Amount)/1000000000)
+			bs.logChan <- fmt.Sprintf("   🔗 Order ID: %s", resp.OrderID)
+			bs.logChan <- fmt.Sprintf("   🆔 Transaction ID: %s", txResult.TransactionID)
+			bs.logChan <- fmt.Sprintf("   📊 Транзакций аккаунта: %d/%d", currentCount, worker.account.MaxTransactions)
+
+			// Записываем в файл логов
+			txLog := &types.TransactionLog{
+				Timestamp:     time.Now(),
+				AccountName:   worker.account.Name,
+				OrderID:       resp.OrderID,
+				Amount:        txResult.Amount,
+				Currency:      resp.Currency,
+				FromAddress:   txResult.FromAddress,
+				ToAddress:     txResult.ToAddress,
+				TransactionID: txResult.TransactionID,
+				TestMode:      worker.testMode,
+			}
+			bs.logTransaction(txLog)
+
+		} else if withTON && resp.OrderID != "" {
+			// Была попытка отправить транзакцию, но она не удалась
+			bs.logChan <- fmt.Sprintf("✅ Поток %d (Аккаунт %d '%s'): Успешная покупка! OrderID: %s, но транзакция НЕ отправлена",
+				worker.workerID, accountNum, worker.account.Name, resp.OrderID)
 		} else {
+			// Обычный успешный запрос без TON
 			bs.logChan <- fmt.Sprintf("✅ Поток %d (Аккаунт %d '%s'): Успешный запрос!", worker.workerID, accountNum, worker.account.Name)
 		}
 	}
@@ -234,6 +306,13 @@ func (bs *BuyerService) Stop() {
 	if bs.cancel != nil {
 		bs.cancel()
 	}
+
+	// Закрываем файл логов транзакций
+	if bs.transactionLog != nil {
+		bs.transactionLog.Close()
+		bs.transactionLog = nil
+	}
+
 	bs.logChan <- "🛑 Остановка покупки стикеров..."
 }
 
@@ -287,4 +366,28 @@ func (bs *BuyerService) updateStatistics(ctx context.Context) {
 			)
 		}
 	}
+}
+
+// logTransaction записывает информацию о транзакции в файл
+func (bs *BuyerService) logTransaction(txLog *types.TransactionLog) {
+	if bs.transactionLog == nil {
+		return
+	}
+
+	// Преобразуем в JSON
+	data, err := json.Marshal(txLog)
+	if err != nil {
+		bs.logChan <- fmt.Sprintf("❌ Ошибка записи лога транзакции: %v", err)
+		return
+	}
+
+	// Записываем в файл
+	_, err = bs.transactionLog.WriteString(string(data) + "\n")
+	if err != nil {
+		bs.logChan <- fmt.Sprintf("❌ Ошибка записи в файл лога: %v", err)
+		return
+	}
+
+	// Сразу сохраняем на диск
+	bs.transactionLog.Sync()
 }

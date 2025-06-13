@@ -91,6 +91,10 @@ type BuyStickersResponse struct {
 	TotalAmount int64
 	Currency    string
 	Wallet      string
+
+	// Информация о транзакции
+	TransactionSent   bool
+	TransactionResult *TransactionResult
 }
 
 // BuyStickers выполняет запрос на покупку стикеров и возвращает сырой ответ
@@ -199,10 +203,19 @@ func (c *HTTPClient) BuyStickersAndPay(authToken string, collection, character i
 		targetWallet = testAddress
 	}
 
-	err = tonClient.SendTON(ctx, targetWallet, amountWithFee, response.OrderID, testMode, testAddress)
+	txResult, err := tonClient.SendTON(ctx, targetWallet, amountWithFee, response.OrderID, testMode, testAddress)
 	if err != nil {
+		// Даже если транзакция не отправлена, возвращаем информацию о попытке
+		if txResult != nil {
+			response.TransactionSent = false
+			response.TransactionResult = txResult
+		}
 		return response, fmt.Errorf("ошибка отправки TON транзакции: %v", err)
 	}
+
+	// Транзакция успешно отправлена
+	response.TransactionSent = true
+	response.TransactionResult = txResult
 
 	return response, nil
 }
