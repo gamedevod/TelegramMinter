@@ -1,0 +1,8 @@
+{
+  "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwaS5zdGlja2VyZG9tLnN0b3JlIiwic3ViIjoiNDExMjg1MjM5IiwiYXVkIjpbImh0dHBzOi8vc3RpY2tlcmRvbS5zdG9yZSJdLCJleHAiOjE3NDk4NDM5MTIsIm5iZiI6MTc0OTg0MDMxMiwiaWF0IjoxNzQ5ODQwMzEyLCJqdGkiOiJlMDliY2I2Yy03NjkzLTQxNWEtOTQ5My0wNjVhYWEwMGM1NDAifQ.CVbISrdIWuuYvFep1pok_lVokjKame0iRe0kFaKrOhI",
+  "threads": 2,
+  "collection": 4,
+  "character": 15,
+  "currency": "TON",
+  "count": 5
+} 
