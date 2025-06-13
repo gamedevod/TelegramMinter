@@ -23,8 +23,19 @@
   "_comment_accounts": "Массив аккаунтов для покупки стикеров",
   "accounts": [
     {
-      "name": "Account 1",
-      "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "name": "Account 1 - Telegram Auth",
+      "_comment_telegram_auth": "Настройки для авторизации через Telegram",
+      "phone_number": "+79123456789",
+      "api_id": 123456,
+      "api_hash": "your_api_hash_from_my_telegram_org",
+      "_comment_session_file": "Опционально - путь к файлу сессии. Если не указан, будет создан автоматически",
+      
+      "_comment_web_app": "Настройки для получения Bearer токена через Web App",
+      "bot_username": "stickersbot",
+      "web_app_url": "https://stickers.bot/app",
+      "token_api_url": "https://your-api.com/auth/telegram-webapp",
+      
+      "auth_token": "",
       "seed_phrase": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24",
       "threads": 2,
       "collection": 4,
@@ -34,7 +45,8 @@
       "max_transactions": 10
     },
     {
-      "name": "Account 2", 
+      "name": "Account 2 - Bearer Token", 
+      "_comment_bearer_auth": "Аккаунт с готовым Bearer токеном",
       "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "seed_phrase": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24",
       "threads": 1,
@@ -44,5 +56,24 @@
       "count": 3,
       "max_transactions": 5
     }
-  ]
+  ],
+  
+  "_comment_telegram_setup": "Инструкции по настройке Telegram авторизации:",
+  "_comment_step1": "1. Перейдите на https://my.telegram.org",
+  "_comment_step2": "2. Войдите с помощью номера телефона",
+  "_comment_step3": "3. Перейдите в 'API development tools'",
+  "_comment_step4": "4. Создайте новое приложение",
+  "_comment_step5": "5. Скопируйте App api_id и App api_hash",
+  "_comment_step6": "6. Заполните поля phone_number, api_id, api_hash в конфигурации",
+  "_comment_step7": "7. Оставьте auth_token пустым - он будет получен автоматически",
+  "_comment_step8": "8. Session файлы будут созданы автоматически в папке sessions/",
+  
+  "_comment_web_app_setup": "Настройка получения Bearer токена:",
+  "_comment_webapp_step1": "9. Укажите bot_username - имя бота без @ (например: stickersbot)",
+  "_comment_webapp_step2": "10. Укажите web_app_url - URL Web App бота для получения токена",
+  "_comment_webapp_step3": "11. Приложение попробует несколько способов получения токена:",
+  "_comment_webapp_step4": "    - Запрос Web App через messages.requestWebView",
+  "_comment_webapp_step5": "    - Отправка команды /token боту",
+  "_comment_webapp_step6": "    - Запрос к вашему API endpoint",
+  "_comment_webapp_step7": "    - Временный токен (для тестирования)"
 } 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -24,6 +25,31 @@ func main() {
 	// Проверяем конфигурацию
 	if !cfg.IsValid() {
 		fmt.Println("❌ Конфигурация недействительна. Проверьте аккаунты и их настройки.")
+		os.Exit(1)
+	}
+
+	// Создаем сервис авторизации
+	authIntegration := service.NewAuthIntegration(cfg)
+
+	// Проверяем настройки Telegram авторизации
+	if errors := authIntegration.ValidateAccounts(); len(errors) > 0 {
+		fmt.Println("❌ Ошибки в настройках Telegram авторизации:")
+		for _, err := range errors {
+			fmt.Printf("   • %v\n", err)
+		}
+		os.Exit(1)
+	}
+
+	// Создаем папку для сессий если её нет
+	if err := os.MkdirAll("sessions", 0755); err != nil {
+		fmt.Printf("❌ Ошибка создания папки sessions: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Выполняем Telegram авторизацию для аккаунтов, которым это требуется
+	ctx := context.Background()
+	if err := authIntegration.AuthorizeAccounts(ctx); err != nil {
+		fmt.Printf("❌ Ошибка авторизации: %v\n", err)
 		os.Exit(1)
 	}
 

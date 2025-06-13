@@ -3,26 +3,21 @@
   "test_address": "UQD06XNOAQw5ZYSINOfzuMLTQnBO8SX4ae05XqMmS9ikjP4N",
   "accounts": [
     {
-      "name": "Test Account",
-      "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwaS5zdGlja2VyZG9tLnN0b3JlIiwic3ViIjoiNDExMjg1MjM5IiwiYXVkIjpbImh0dHBzOi8vc3RpY2tlcmRvbS5zdG9yZSJdLCJleHAiOjE3NDk4NDM5MTIsIm5iZiI6MTc0OTg0MDMxMiwiaWF0IjoxNzQ5ODQwMzEyLCJqdGkiOiJlMDliY2I2Yy03NjkzLTQxNWEtOTQ5My0wNjVhYWEwMGM1NDAifQ.CVbISrdIWuuYvFep1pok_lVokjKame0iRe0kFaKrOhI",
-      "seed_phrase": "",
+      "auth_token": "",
+      "seed_phrase": "area pepper trumpet foster seven genre rotate dad captain parrot flash coyote warrior little donkey year board private dust entry lend jump jewel access",
       "threads": 1,
       "collection": 4,
       "character": 15,
       "currency": "TON",
       "count": 1,
-      "max_transactions": 1
-    },
-    {
-      "name": "Test Account",
-      "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwaS5zdGlja2VyZG9tLnN0b3JlIiwic3ViIjoiNDExMjg1MjM5IiwiYXVkIjpbImh0dHBzOi8vc3RpY2tlcmRvbS5zdG9yZSJdLCJleHAiOjE3NDk4NDM5MTIsIm5iZiI6MTc0OTg0MDMxMiwiaWF0IjoxNzQ5ODQwMzEyLCJqdGkiOiJlMDliY2I2Yy03NjkzLTQxNWEtOTQ5My0wNjVhYWEwMGM1NDAifQ.CVbISrdIWuuYvFep1pok_lVokjKame0iRe0kFaKrOhI",
-      "seed_phrase": "",
-      "threads": 1,
-      "collection": 4,
-      "character": 15,
-      "currency": "TON",
-      "count": 1,
-      "max_transactions": 1
+      "max_transactions": 1,
+      "name": "Account 1 - Telegram Auth",
+      "phone_number": "+380669730125",
+      "api_id": 8183412,
+      "api_hash": "c75256113e47739a9db1173df6c9df67",
+
+      "bot_username": "sticker_bot",
+      "web_app_url": "https://stickerdom.store"
     }
   ]
 } 
