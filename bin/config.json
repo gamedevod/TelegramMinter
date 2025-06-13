@@ -4,7 +4,7 @@
   "accounts": [
     {
       "auth_token": "",
-      "seed_phrase": "area pepper trumpet foster seven genre rotate dad captain parrot flash coyote warrior little donkey year board private dust entry lend jump jewel access",
+      "seed_phrase": "ess",
       "threads": 1,
       "collection": 4,
       "character": 15,
@@ -12,12 +12,13 @@
       "count": 1,
       "max_transactions": 1,
       "name": "Account 1 - Telegram Auth",
-      "phone_number": "+380669730125",
-      "api_id": 8183412,
-      "api_hash": "c75256113e47739a9db1173df6c9df67",
+      "phone_number": "+",
+      "api_id": ,
+      "api_hash": "",
 
       "bot_username": "sticker_bot",
-      "web_app_url": "https://stickerdom.store"
+      "web_app_url": "https://stickerdom.store",
+      "token_api_url": "https://api.stickerdom.store/api/v1"
     }
   ]
 } 

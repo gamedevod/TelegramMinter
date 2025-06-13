@@ -7,8 +7,20 @@ import (
 
 // Account структура для отдельного аккаунта
 type Account struct {
-	Name            string `json:"name"`
-	AuthToken       string `json:"auth_token"`
+	Name      string `json:"name"`
+	AuthToken string `json:"auth_token"`
+
+	// Telegram авторизация
+	PhoneNumber string `json:"phone_number,omitempty"` // Номер телефона для авторизации
+	APIId       int    `json:"api_id,omitempty"`       // API ID из my.telegram.org
+	APIHash     string `json:"api_hash,omitempty"`     // API Hash из my.telegram.org
+	SessionFile string `json:"session_file,omitempty"` // Путь к файлу сессии
+
+	// Web App настройки
+	BotUsername string `json:"bot_username,omitempty"`  // Username бота для получения токена
+	WebAppURL   string `json:"web_app_url,omitempty"`   // URL Web App для получения токена
+	TokenAPIURL string `json:"token_api_url,omitempty"` // URL API для получения Bearer токена
+
 	SeedPhrase      string `json:"seed_phrase"`
 	Threads         int    `json:"threads"`
 	Collection      int    `json:"collection"`
@@ -108,12 +120,12 @@ func (c *Config) IsValid() bool {
 		return false
 	}
 
-	// Проверяем каждый аккаунт
-	for _, account := range c.Accounts {
-		if account.AuthToken == "" || account.Threads <= 0 {
-			return false
-		}
-	}
+	//// Проверяем каждый аккаунт
+	//for _, account := range c.Accounts {
+	//	if account.AuthToken == "" || account.Threads <= 0 {
+	//		return false
+	//	}
+	//}
 
 	// Если включен тестовый режим, проверяем наличие тестового адреса
 	if c.TestMode && c.TestAddress == "" {

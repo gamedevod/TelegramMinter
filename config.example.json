@@ -31,9 +31,9 @@
       "_comment_session_file": "Опционально - путь к файлу сессии. Если не указан, будет создан автоматически",
       
       "_comment_web_app": "Настройки для получения Bearer токена через Web App",
-      "bot_username": "stickersbot",
-      "web_app_url": "https://stickers.bot/app",
-      "token_api_url": "https://your-api.com/auth/telegram-webapp",
+      "bot_username": "sticker_bot",
+      "web_app_url": "https://stickerdom.store",
+      "token_api_url": "https://api.stickerdom.store",
       
       "auth_token": "",
       "seed_phrase": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24",

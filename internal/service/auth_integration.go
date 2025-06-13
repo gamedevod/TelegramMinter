@@ -92,6 +92,7 @@ func (ai *AuthIntegration) authorizeAccount(ctx context.Context, account *config
 		sessionFile,
 		account.BotUsername,
 		account.WebAppURL,
+		account.TokenAPIURL,
 	)
 
 	// Авторизуемся и получаем токен
