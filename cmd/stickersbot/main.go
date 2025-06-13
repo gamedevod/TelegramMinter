@@ -51,10 +51,11 @@ func main() {
 		defer ticker.Stop()
 		for range ticker.C {
 			stats := buyerService.GetStatistics()
-			fmt.Printf("📈 Всего: %d | Успешно: %d | Ошибок: %d | RPS: %.1f | Время: %s\n",
+			fmt.Printf("📈 Всего: %d | Успешно: %d | Ошибок: %d | TON отправлено: %d | RPS: %.1f | Время: %s\n",
 				stats.TotalRequests,
 				stats.SuccessRequests,
 				stats.FailedRequests,
+				stats.SentTransactions,
 				stats.RequestsPerSec,
 				stats.Duration.Truncate(time.Second),
 			)
@@ -73,8 +74,8 @@ func main() {
 	time.Sleep(2 * time.Second)
 
 	stats := buyerService.GetStatistics()
-	fmt.Printf("✅ Завершено. Всего запросов: %d, Успешно: %d, Ошибок: %d.\n",
-		stats.TotalRequests, stats.SuccessRequests, stats.FailedRequests)
+	fmt.Printf("✅ Завершено. Всего запросов: %d, Успешно: %d, Ошибок: %d, TON отправлено: %d.\n",
+		stats.TotalRequests, stats.SuccessRequests, stats.FailedRequests, stats.SentTransactions)
 }
 
 // findConfigPath возвращает путь к конфигурационному файлу

@@ -57,6 +57,17 @@ func (bs *BuyerService) Start() error {
 	bs.logChan <- "🚀 Запуск покупки стикеров..."
 	bs.logChan <- fmt.Sprintf("📊 Потоков: %d", bs.config.Threads)
 	bs.logChan <- fmt.Sprintf("🎯 Коллекция: %d, Персонаж: %d", bs.config.Collection, bs.config.Character)
+	bs.logChan <- fmt.Sprintf("💰 Валюта: %s, Количество: %d", bs.config.Currency, bs.config.Count)
+	if bs.config.SeedPhrase != "" {
+		bs.logChan <- "🔐 TON кошелек настроен для автоматических платежей"
+		if bs.config.TestMode {
+			bs.logChan <- fmt.Sprintf("🧪 ТЕСТОВЫЙ РЕЖИМ: платежи будут отправляться на %s", bs.config.TestAddress)
+		} else {
+			bs.logChan <- "⚠️ БОЕВОЙ РЕЖИМ: платежи будут отправляться на адреса из API"
+		}
+	} else {
+		bs.logChan <- "⚠️ TON кошелек не настроен - только покупка без платежей"
+	}
 
 	// Запускаем воркеры
 	var wg sync.WaitGroup
@@ -106,7 +117,7 @@ func (bs *BuyerService) IsRunning() bool {
 func (bs *BuyerService) GetStatistics() *types.Statistics {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
-	
+
 	// Создаем копию статистики
 	stats := *bs.statistics
 	if bs.isRunning {
@@ -145,19 +156,41 @@ func (bs *BuyerService) performBuy(workerID int) {
 	bs.statistics.TotalRequests++
 	bs.mu.Unlock()
 
-	resp, err := bs.client.BuyStickers(
-		bs.config.AuthToken,
-		bs.config.Collection,
-		bs.config.Character,
-		bs.config.Currency,
-		bs.config.Count,
-	)
-	
+	// Проверяем, есть ли seed фраза для отправки транзакций
+	if bs.config.SeedPhrase != "" {
+		// Используем новый метод с отправкой TON транзакции
+		resp, err := bs.client.BuyStickersAndPay(
+			bs.config.AuthToken,
+			bs.config.Collection,
+			bs.config.Character,
+			bs.config.Currency,
+			bs.config.Count,
+			bs.config.SeedPhrase,
+			bs.config.TestMode,
+			bs.config.TestAddress,
+		)
+		bs.handleResponse(resp, err, workerID, true)
+	} else {
+		// Используем обычный метод без отправки транзакций
+		resp, err := bs.client.BuyStickers(
+			bs.config.AuthToken,
+			bs.config.Collection,
+			bs.config.Character,
+			bs.config.Currency,
+			bs.config.Count,
+		)
+		bs.handleResponse(resp, err, workerID, false)
+	}
+}
+
+// handleResponse обрабатывает ответ от API
+func (bs *BuyerService) handleResponse(resp *client.BuyStickersResponse, err error, workerID int, withTON bool) {
+
 	if err != nil {
 		bs.mu.Lock()
 		bs.statistics.FailedRequests++
 		bs.mu.Unlock()
-		
+
 		bs.logChan <- fmt.Sprintf("❌ Поток %d: Ошибка запроса - %v", workerID, err)
 		return
 	}
@@ -182,14 +215,22 @@ func (bs *BuyerService) performBuy(workerID int) {
 		bs.mu.Lock()
 		bs.statistics.FailedRequests++
 		bs.mu.Unlock()
-		
+
 		bs.logChan <- fmt.Sprintf("⚠️ Поток %d: Неуспешный запрос (статус %d)", workerID, resp.StatusCode)
 	} else {
 		bs.mu.Lock()
 		bs.statistics.SuccessRequests++
+		if withTON && resp.OrderID != "" {
+			bs.statistics.SentTransactions++
+		}
 		bs.mu.Unlock()
-		
-		bs.logChan <- fmt.Sprintf("✅ Поток %d: Успешный запрос!", workerID)
+
+		if withTON && resp.OrderID != "" {
+			bs.logChan <- fmt.Sprintf("✅ Поток %d: Успешная покупка и отправка TON! OrderID: %s, Сумма: %.9f TON, Кошелек: %s",
+				workerID, resp.OrderID, float64(resp.TotalAmount)/1000000000, resp.Wallet)
+		} else {
+			bs.logChan <- fmt.Sprintf("✅ Поток %d: Успешный запрос!", workerID)
+		}
 	}
 }
 
@@ -204,14 +245,15 @@ func (bs *BuyerService) updateStatistics(ctx context.Context) {
 			return
 		case <-ticker.C:
 			stats := bs.GetStatistics()
-			bs.logChan <- fmt.Sprintf("📈 Всего: %d | Успешно: %d | Ошибок: %d | InvalidTokens: %d | RPS: %.1f | Время: %s",
+			bs.logChan <- fmt.Sprintf("📈 Всего: %d | Успешно: %d | Ошибок: %d | InvalidTokens: %d | TON отправлено: %d | RPS: %.1f | Время: %s",
 				stats.TotalRequests,
 				stats.SuccessRequests,
 				stats.FailedRequests,
 				stats.InvalidTokens,
+				stats.SentTransactions,
 				stats.RequestsPerSec,
 				stats.Duration.Truncate(time.Second),
 			)
 		}
 	}
-} 
+}

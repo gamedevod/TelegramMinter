@@ -1,0 +1,22 @@
+{
+  "_comment_auth_token": "Токен авторизации от API StickerDom",
+  "auth_token": "YOUR_AUTH_TOKEN_HERE",
+  
+  "_comment_threads": "Количество потоков для покупки",
+  "threads": 2,
+  
+  "_comment_sticker_params": "Параметры покупки стикеров",
+  "collection": 4,
+  "character": 15,
+  "currency": "TON",
+  "count": 5,
+  
+  "_comment_ton_wallet": "SEED фраза вашего TON кошелька (24 слова через пробел)",
+  "seed_phrase": "your twenty four word seed phrase goes here for ton wallet transactions",
+  
+  "_comment_test_mode": "Тестовый режим - если true, транзакции будут отправляться на test_address",
+  "test_mode": false,
+  
+  "_comment_test_address": "Тестовый адрес для отправки транзакций в тестовом режиме",
+  "test_address": "UQBfuEnLEUF8JEbXpknjmxGqeZsNR2CX9MIJfZVi99M1OCEF"
+} 

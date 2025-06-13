@@ -4,5 +4,8 @@
   "collection": 4,
   "character": 15,
   "currency": "TON",
-  "count": 5
+  "count": 5,
+  "seed_phrase": "area pepper trumpet foster seven genre rotate dad captain parrot flash coyote warrior little donkey year board private dust entry lend jump jewel access",
+  "test_mode": true,
+  "test_address": "UQD06XNOAQw5ZYSINOfzuMLTQnBO8SX4ae05XqMmS9ikjP4N"
 } 

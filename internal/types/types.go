@@ -40,9 +40,9 @@ type APIResponse struct {
 
 // BuyResponse ответ на запрос покупки стикеров
 type BuyResponse struct {
-	OK        bool   `json:"ok"`
-	ErrorCode string `json:"errorCode,omitempty"`
-	Message   string `json:"message,omitempty"`
+	OK        bool        `json:"ok"`
+	ErrorCode string      `json:"errorCode,omitempty"`
+	Message   string      `json:"message,omitempty"`
 	Data      interface{} `json:"data,omitempty"`
 }
 
@@ -60,6 +60,7 @@ type Statistics struct {
 	SuccessRequests  int           `json:"success_requests"`
 	FailedRequests   int           `json:"failed_requests"`
 	InvalidTokens    int           `json:"invalid_tokens"`
+	SentTransactions int           `json:"sent_transactions"`
 	StartTime        time.Time     `json:"start_time"`
 	Duration         time.Duration `json:"duration"`
 	RequestsPerSec   float64       `json:"requests_per_sec"`
@@ -67,11 +68,11 @@ type Statistics struct {
 
 // AppState состояние приложения
 type AppState struct {
-	CurrentUser   *User         `json:"current_user"`
-	StickerPacks  []StickerPack `json:"sticker_packs"`
-	CurrentPack   *StickerPack  `json:"current_pack"`
-	IsLoggedIn    bool          `json:"is_logged_in"`
-	LastUpdated   time.Time     `json:"last_updated"`
-	IsRunning     bool          `json:"is_running"`
-	Statistics    *Statistics   `json:"statistics"`
-} 
+	CurrentUser  *User         `json:"current_user"`
+	StickerPacks []StickerPack `json:"sticker_packs"`
+	CurrentPack  *StickerPack  `json:"current_pack"`
+	IsLoggedIn   bool          `json:"is_logged_in"`
+	LastUpdated  time.Time     `json:"last_updated"`
+	IsRunning    bool          `json:"is_running"`
+	Statistics   *Statistics   `json:"statistics"`
+}
