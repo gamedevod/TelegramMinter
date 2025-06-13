@@ -10,16 +10,9 @@ type Account struct {
 	Name      string `json:"name"`
 	AuthToken string `json:"auth_token"`
 
-	// Telegram авторизация
+	// Telegram авторизация (только номер телефона уникален для каждого аккаунта)
 	PhoneNumber string `json:"phone_number,omitempty"` // Номер телефона для авторизации
-	APIId       int    `json:"api_id,omitempty"`       // API ID из my.telegram.org
-	APIHash     string `json:"api_hash,omitempty"`     // API Hash из my.telegram.org
-	SessionFile string `json:"session_file,omitempty"` // Путь к файлу сессии
-
-	// Web App настройки
-	BotUsername string `json:"bot_username,omitempty"`  // Username бота для получения токена
-	WebAppURL   string `json:"web_app_url,omitempty"`   // URL Web App для получения токена
-	TokenAPIURL string `json:"token_api_url,omitempty"` // URL API для получения Bearer токена
+	SessionFile string `json:"session_file,omitempty"` // Путь к файлу сессии (опционально)
 
 	SeedPhrase      string `json:"seed_phrase"`
 	Threads         int    `json:"threads"`
@@ -49,6 +42,13 @@ type Config struct {
 	// Тестовые настройки (общие для всех аккаунтов)
 	TestMode    bool   `json:"test_mode"`
 	TestAddress string `json:"test_address"`
+
+	// Общие Telegram настройки (для всех аккаунтов)
+	APIId       int    `json:"api_id"`        // API ID из my.telegram.org
+	APIHash     string `json:"api_hash"`      // API Hash из my.telegram.org
+	BotUsername string `json:"bot_username"`  // Username бота для получения токена
+	WebAppURL   string `json:"web_app_url"`   // URL Web App для получения токена
+	TokenAPIURL string `json:"token_api_url"` // URL API для получения Bearer токена
 
 	// Аккаунты
 	Accounts []Account `json:"accounts"`

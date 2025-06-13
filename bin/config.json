@@ -1,24 +1,23 @@
 {
   "test_mode": true,
   "test_address": "UQD06XNOAQw5ZYSINOfzuMLTQnBO8SX4ae05XqMmS9ikjP4N",
+  "api_id": ,
+  "api_hash": "",
+  "bot_username": "sticker_bot",
+  "web_app_url": "https://stickerdom.store",
+  "token_api_url": "https://api.stickerdom.store/api/v1",
   "accounts": [
     {
       "auth_token": "",
-      "seed_phrase": "ess",
+      "seed_phrase": "el access",
       "threads": 1,
-      "collection": 4,
-      "character": 15,
+      "collection": 1,
+      "character": 25,
       "currency": "TON",
       "count": 1,
       "max_transactions": 1,
       "name": "Account 1 - Telegram Auth",
-      "phone_number": "+",
-      "api_id": ,
-      "api_hash": "",
-
-      "bot_username": "sticker_bot",
-      "web_app_url": "https://stickerdom.store",
-      "token_api_url": "https://api.stickerdom.store/api/v1"
+      "phone_number": ""
     }
   ]
 } 
