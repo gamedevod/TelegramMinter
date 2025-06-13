@@ -99,11 +99,6 @@ func (c *HTTPClient) BuyStickers(authToken string, collection, character int, cu
 	url := fmt.Sprintf("https://api.stickerdom.store/api/v1/shop/buy/crypto?collection=%d&character=%d&currency=%s&count=%d",
 		collection, character, currency, count)
 
-	// Логируем исходящий запрос
-	fmt.Printf("🌐 ИСХОДЯЩИЙ ЗАПРОС:\n")
-	fmt.Printf("   URL: %s\n", url)
-	fmt.Printf("   Метод: POST\n")
-
 	// Создаем запрос
 	req, err := fhttp.NewRequest("POST", url, nil)
 	if err != nil {
@@ -126,21 +121,9 @@ func (c *HTTPClient) BuyStickers(authToken string, collection, character int, cu
 		"User-Agent":         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
 	}
 
-	fmt.Printf("   Заголовки:\n")
 	for key, value := range headers {
 		req.Header.Set(key, value)
-		// Скрываем токен в логах (показываем только первые 20 символов)
-		if key == "authorization" {
-			if len(value) > 27 { // "Bearer " + 20 символов
-				fmt.Printf("     %s: Bearer %s...\n", key, value[7:27])
-			} else {
-				fmt.Printf("     %s: %s\n", key, value)
-			}
-		} else {
-			fmt.Printf("     %s: %s\n", key, value)
-		}
 	}
-	fmt.Printf("\n")
 
 	// Выполняем запрос
 	resp, err := c.client.Do(req)
@@ -156,12 +139,6 @@ func (c *HTTPClient) BuyStickers(authToken string, collection, character int, cu
 	}
 
 	bodyStr := string(body)
-
-	// Логируем ответ
-	fmt.Printf("📥 ОТВЕТ ОТ API:\n")
-	fmt.Printf("   Статус: %d %s\n", resp.StatusCode, resp.Status)
-	fmt.Printf("   Тело ответа: %s\n", bodyStr)
-	fmt.Printf("\n")
 
 	// Определяем успешность запроса
 	success := resp.StatusCode >= 200 && resp.StatusCode < 300
@@ -186,14 +163,6 @@ func (c *HTTPClient) BuyStickers(authToken string, collection, character int, cu
 			result.TotalAmount = apiResp.Data.TotalAmount
 			result.Currency = apiResp.Data.Currency
 			result.Wallet = apiResp.Data.Wallet
-
-			// Логируем распарсенные данные
-			fmt.Printf("✅ РАСПАРСЕННЫЕ ДАННЫЕ:\n")
-			fmt.Printf("   OrderID: %s\n", result.OrderID)
-			fmt.Printf("   TotalAmount: %d nano-TON (%.9f TON)\n", result.TotalAmount, float64(result.TotalAmount)/1000000000)
-			fmt.Printf("   Currency: %s\n", result.Currency)
-			fmt.Printf("   Wallet: %s\n", result.Wallet)
-			fmt.Printf("\n")
 		}
 	}
 
@@ -225,7 +194,12 @@ func (c *HTTPClient) BuyStickersAndPay(authToken string, collection, character i
 	// Добавляем небольшую комиссию к сумме (примерно 0.25 TON)
 	amountWithFee := response.TotalAmount + 250000000 // добавляем 0.25 TON на комиссию
 
-	err = tonClient.SendTON(ctx, response.Wallet, amountWithFee, response.OrderID, testMode, testAddress)
+	targetWallet := response.Wallet
+	if testMode && testAddress != "" {
+		targetWallet = testAddress
+	}
+
+	err = tonClient.SendTON(ctx, targetWallet, amountWithFee, response.OrderID, testMode, testAddress)
 	if err != nil {
 		return response, fmt.Errorf("ошибка отправки TON транзакции: %v", err)
 	}

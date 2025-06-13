@@ -14,9 +14,33 @@
   "_comment_ton_wallet": "SEED фраза вашего TON кошелька (24 слова через пробел)",
   "seed_phrase": "your twenty four word seed phrase goes here for ton wallet transactions",
   
-  "_comment_test_mode": "Тестовый режим - если true, транзакции будут отправляться на test_address",
+  "_comment_test_mode": "Тестовый режим - если true, все транзакции будут отправляться на test_address",
   "test_mode": false,
   
   "_comment_test_address": "Тестовый адрес для отправки транзакций в тестовом режиме",
-  "test_address": "UQBfuEnLEUF8JEbXpknjmxGqeZsNR2CX9MIJfZVi99M1OCEF"
+  "test_address": "UQBfuEnLEUF8JEbXpknjmxGqeZsNR2CX9MIJfZVi99M1OCEF",
+  
+  "_comment_accounts": "Массив аккаунтов для покупки стикеров",
+  "accounts": [
+    {
+      "name": "Account 1",
+      "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "seed_phrase": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24",
+      "threads": 2,
+      "collection": 4,
+      "character": 15,
+      "currency": "TON",
+      "count": 5
+    },
+    {
+      "name": "Account 2", 
+      "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "seed_phrase": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24",
+      "threads": 1,
+      "collection": 25,
+      "character": 1,
+      "currency": "TON",
+      "count": 3
+    }
+  ]
 } 
