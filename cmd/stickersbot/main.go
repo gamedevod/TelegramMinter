@@ -42,6 +42,7 @@ func printHeader() {
 ║  ⚓ Developed by: DUO ON DECK Team                                           ║
 ║  🚀 Project: Telegram Auto Buy                                              ║
 ║  📧 Support: @black_beard68                                                 ║
+║  📢 Channel: @two_on_deck                                                   ║
 ║  🌊 "Two minds, one mission - sailing the crypto seas!"                     ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
