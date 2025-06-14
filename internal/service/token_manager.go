@@ -94,12 +94,18 @@ func (tm *TokenManager) RefreshTokenOnError(accountName string, statusCode int) 
 
 	log.Printf("🔄 Обновление токена для %s из-за ошибки %d", accountName, statusCode)
 
-	// Проверяем cooldown - не обновляем слишком часто
-	if tokenInfo, exists := tm.tokens[accountName]; exists {
+	// Проверяем cooldown - не обновляем слишком часто, НО игнорируем cooldown для критических ошибок токена
+	isTokenError := statusCode == 401 || statusCode == 403 || statusCode == 200 // 200 может содержать JSON ошибку токена
+	if tokenInfo, exists := tm.tokens[accountName]; exists && !isTokenError {
 		if time.Since(tokenInfo.LastCheck) < tm.checkCooldown {
 			log.Printf("⏳ Слишком частое обновление токена для %s, используем кешированный", accountName)
 			return tokenInfo.Token, nil
 		}
+	}
+
+	// Для ошибок токена всегда пытаемся обновить
+	if isTokenError {
+		log.Printf("🔑 Критическая ошибка токена для %s (статус %d), принудительное обновление", accountName, statusCode)
 	}
 
 	// Находим аккаунт в конфигурации
@@ -252,6 +258,12 @@ func (tm *TokenManager) InitializeTokens() {
 			log.Printf("📋 Токен для %s добавлен в кеш", account.Name)
 		}
 	}
+}
+
+// RefreshTokenOnJSONError обновляет токен при получении JSON ошибки токена
+func (tm *TokenManager) RefreshTokenOnJSONError(accountName string) (string, error) {
+	log.Printf("🔑 Обновление токена для %s из-за JSON ошибки токена", accountName)
+	return tm.RefreshTokenOnError(accountName, 200) // Используем статус 200 для JSON ошибок
 }
 
 // ForceRefreshToken принудительно обновляет токен (игнорируя кеш и cooldown)
