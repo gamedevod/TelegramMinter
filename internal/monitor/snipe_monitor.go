@@ -79,11 +79,11 @@ func NewSnipeMonitor(account *config.Account, httpClient *client.HTTPClient, pur
 // Start запускает снайп монитор
 func (s *SnipeMonitor) Start() error {
 	if s.config.SnipeMonitor == nil || !s.config.SnipeMonitor.Enabled {
-		return fmt.Errorf("снайп монитор не включен")
+		return fmt.Errorf("снайп\ монитор\ не\ включен")
 	}
 
 	if s.config.AuthToken == "" {
-		return fmt.Errorf("отсутствует токен авторизации")
+		return fmt.Errorf("отсутствует\ токен\ авторизации")
 	}
 
 	s.log("🎯 Снайп монитор запущен")

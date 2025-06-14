@@ -17,9 +17,9 @@
   "accounts": [
     {
       "name": "Account 1 - Telegram Auth",
-      "auth_token": "tlcmRvbS5zdG9yZSJdLCJleHAiOjE3NDk4OTgzOTgsIm5iZiI6MTc0OTg5NDc5OCwiaWF0IjoxNzQ5ODk0Nzk4LCJqdGkiOiJiMDEyYWRkNy03YWVkLTQ3NGItOTVmOS0yN2RiNmE0NDkxYjkifQ.Kgc3ZnXa5UNyZVNIA49fRKj87-XiwBTcVikuUB00x5o",
-      "phone_number": "+380669730125",
-      "seed_phrase": " ",
+      "auth_token": ".",
+      "phone_number": "+",
+      "seed_phrase": "",
       "threads": 1,
       "collection": 1,
       "character": 70,
@@ -27,7 +27,7 @@
       "count": 1,
       "max_transactions": 1,
       "snipe_monitor": {
-        "enabled": true,
+        "enabled": false,
         "supply_range": {
           "min": 10,
           "max": 5000

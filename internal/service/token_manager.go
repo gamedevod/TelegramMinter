@@ -61,7 +61,7 @@ func (tm *TokenManager) GetCachedToken(accountName string) (string, error) {
 	}
 
 	if account == nil {
-		return "", fmt.Errorf("аккаунт %s не найден", accountName)
+		return "", fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
 	}
 
 	// Проверяем кешированный токен
@@ -84,7 +84,7 @@ func (tm *TokenManager) GetCachedToken(accountName string) (string, error) {
 		return account.AuthToken, nil
 	}
 
-	return "", fmt.Errorf("токен для аккаунта %s отсутствует", accountName)
+	return "", fmt.Errorf("токен\ для\ аккаунта\ %s\ отсутствует", accountName)
 }
 
 // RefreshTokenOnError обновляет токен только при получении ошибки авторизации
@@ -120,7 +120,7 @@ func (tm *TokenManager) RefreshTokenOnError(accountName string, statusCode int) 
 	}
 
 	if account == nil {
-		return "", fmt.Errorf("аккаунт %s не найден", accountName)
+		return "", fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
 	}
 
 	// Обновляем токен через Telegram авторизацию
@@ -285,7 +285,7 @@ func (tm *TokenManager) ForceRefreshToken(accountName string) (string, error) {
 	}
 
 	if account == nil {
-		return "", fmt.Errorf("аккаунт %s не найден", accountName)
+		return "", fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
 	}
 
 	// Обновляем токен через Telegram авторизацию
@@ -339,7 +339,7 @@ func (tm *TokenManager) ReloadTokenFromConfig(accountName string) error {
 	}
 
 	if account == nil {
-		return fmt.Errorf("аккаунт %s не найден", accountName)
+		return fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
 	}
 
 	if account.AuthToken == "" {

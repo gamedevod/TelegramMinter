@@ -14,19 +14,19 @@ import (
 	"stickersbot/internal/types"
 )
 
-// AccountWorker структура для работы с отдельным аккаунтом
+// AccountWorker structure for working with individual account
 type AccountWorker struct {
 	client           *client.HTTPClient
 	account          config.Account
 	testMode         bool
 	testAddr         string
 	workerID         int
-	transactionCount int          // Счетчик успешных транзакций
-	isActive         bool         // Флаг активности аккаунта
-	mu               sync.RWMutex // Мьютекс для безопасного доступа к счетчикам
+	transactionCount int          // Counter of successful transactions
+	isActive         bool         // Account activity flag
+	mu               sync.RWMutex // Mutex for safe access to counters
 }
 
-// BuyerService сервис для покупки стикеров
+// BuyerService service for purchasing stickers
 type BuyerService struct {
 	client         *client.HTTPClient
 	config         *config.Config
@@ -35,12 +35,12 @@ type BuyerService struct {
 	cancel         context.CancelFunc
 	mu             sync.RWMutex
 	logChan        chan string
-	transactionLog *os.File // Файл для логирования транзакций
+	transactionLog *os.File // File for transaction logging
 
-	// Снайп мониторы
+	// Snipe monitors
 	snipeMonitors []*monitor.SnipeMonitor
 
-	// Менеджер токенов
+	// Token manager
 	tokenManager *TokenManager
 }
 
@@ -69,7 +69,7 @@ func (bs *BuyerService) Start() error {
 	defer bs.mu.Unlock()
 
 	if bs.isRunning {
-		return fmt.Errorf("сервис уже запущен")
+		return fmt.Errorf("сервис\ уже\ запущен")
 	}
 
 	if !bs.config.IsValid() {
@@ -80,13 +80,13 @@ func (bs *BuyerService) Start() error {
 	bs.cancel = cancel
 	bs.isRunning = true
 
-	// Создаем менеджер токенов
+	// Create token manager
 	bs.tokenManager = NewTokenManager(bs.config)
 
-	// Инициализируем кеш токенов
+	// Initialize token cache
 	bs.tokenManager.InitializeTokens()
 
-	// Запускаем превентивное обновление токенов каждые 30 минут
+	// Start preventive token refresh every 30 minutes
 	go func() {
 		ticker := time.NewTicker(30 * time.Minute)
 		defer ticker.Stop()
@@ -507,7 +507,7 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 		}
 	}
 	if account == nil {
-		return fmt.Errorf("аккаунт %s не найден", accountName)
+		return fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
 	}
 
 	// Выполняем запрос на покупку

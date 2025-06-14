@@ -13,71 +13,71 @@ import (
 )
 
 func main() {
-	// Ищем конфигурацию
+	// Find configuration
 	cfgPath := findConfigPath()
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
-		fmt.Printf("❌ Ошибка загрузки конфигурации (%s): %v\n", cfgPath, err)
+		fmt.Printf("❌ Configuration loading error (%s): %v\n", cfgPath, err)
 		os.Exit(1)
 	}
-	fmt.Printf("📋 Загружена конфигурация: %s\n", cfgPath)
+	fmt.Printf("📋 Configuration loaded: %s\n", cfgPath)
 
-	// Проверяем конфигурацию
+	// Validate configuration
 	if !cfg.IsValid() {
-		fmt.Println("❌ Конфигурация недействительна. Проверьте аккаунты и их настройки.")
+		fmt.Println("❌ Configuration is invalid. Check accounts and their settings.")
 		os.Exit(1)
 	}
 
-	// Создаем сервис авторизации
+	// Create authorization service
 	authIntegration := service.NewAuthIntegration(cfg)
 
-	// Проверяем настройки Telegram авторизации
+	// Validate Telegram authorization settings
 	if errors := authIntegration.ValidateAccounts(); len(errors) > 0 {
-		fmt.Println("❌ Ошибки в настройках Telegram авторизации:")
+		fmt.Println("❌ Telegram authorization settings errors:")
 		for _, err := range errors {
 			fmt.Printf("   • %v\n", err)
 		}
 		os.Exit(1)
 	}
 
-	// Создаем папку для сессий если её нет
+	// Create sessions folder if it doesn't exist
 	if err := os.MkdirAll("sessions", 0755); err != nil {
-		fmt.Printf("❌ Ошибка создания папки sessions: %v\n", err)
+		fmt.Printf("❌ Error creating sessions folder: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Выполняем Telegram авторизацию для аккаунтов, которым это требуется
+	// Perform Telegram authorization for accounts that need it
 	ctx := context.Background()
 	if err := authIntegration.AuthorizeAccounts(ctx); err != nil {
-		fmt.Printf("❌ Ошибка авторизации: %v\n", err)
+		fmt.Printf("❌ Authorization error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Создаём сервис покупки
+	// Create buyer service
 	buyerService := service.NewBuyerService(cfg)
 
-	// Запускаем сервис
+	// Start service
 	if err := buyerService.Start(); err != nil {
-		fmt.Printf("❌ Ошибка запуска сервиса: %v\n", err)
+		fmt.Printf("❌ Service startup error: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("🚀 Покупка стикеров запущена! Нажмите Ctrl+C для остановки.")
+	fmt.Println("🚀 Sticker purchasing started! Press Ctrl+C to stop.")
 
-	// Горутина для трансляции логов в stdout
+	// Goroutine for broadcasting logs to stdout
 	go func() {
 		for log := range buyerService.GetLogChannel() {
 			fmt.Println(log)
 		}
 	}()
 
-	// Периодический вывод статистики каждые 5 секунд
+	// Periodic statistics output every 5 seconds
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 		for range ticker.C {
 			stats := buyerService.GetStatistics()
-			fmt.Printf("📈 Всего: %d | Успешно: %d | Ошибок: %d | TON отправлено: %d | RPS: %.1f | Время: %s\n",
+			fmt.Printf("📈 Total: %d | Success: %d | Errors: %d | TON sent: %d | RPS: %.1f | Time: %s\n",
 				stats.TotalRequests,
 				stats.SuccessRequests,
 				stats.FailedRequests,
@@ -88,23 +88,23 @@ func main() {
 		}
 	}()
 
-	// Перехватываем Ctrl+C / SIGTERM
+	// Catch Ctrl+C / SIGTERM
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	<-sigs // Блокируемся до сигнала
+	<-sigs // Block until signal
 
-	fmt.Println("\n🛑 Остановка...")
+	fmt.Println("\n🛑 Stopping...")
 	buyerService.Stop()
 
-	// Даём воркерам корректно завершиться
+	// Give workers time to finish gracefully
 	time.Sleep(2 * time.Second)
 
 	stats := buyerService.GetStatistics()
-	fmt.Printf("✅ Завершено. Всего запросов: %d, Успешно: %d, Ошибок: %d, TON отправлено: %d.\n",
+	fmt.Printf("✅ Completed. Total requests: %d, Success: %d, Errors: %d, TON sent: %d.\n",
 		stats.TotalRequests, stats.SuccessRequests, stats.FailedRequests, stats.SentTransactions)
 }
 
-// findConfigPath возвращает путь к конфигурационному файлу
+// findConfigPath returns the path to the configuration file
 func findConfigPath() string {
 	return "./config.json"
 }
