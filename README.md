@@ -78,6 +78,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
 
 ```json
 {
+  "license_key": "",
   "api_id": 0,
   "api_hash": "",
   "bot_username": "",
@@ -104,6 +105,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
 **Example of filled config:**
 ```json
 {
+  "license_key": "YOUR_LICENSE_KEY_HERE",
   "api_id": 1234567,
   "api_hash": "abcd1234efgh5678ijkl9012mnop3456",
   "bot_username": "mystickersbot",
@@ -131,6 +133,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
 
 ### Main settings:
 
+- **`license_key`** - Program license key (obtain from developers)
 - **`api_id`** - Your Telegram application ID (obtained in step 3)
 - **`api_hash`** - Your Telegram application hash (obtained in step 3)
 - **`bot_username`** - Bot name without @ symbol (e.g., if bot is @mystickersbot, write "mystickersbot")
@@ -227,9 +230,10 @@ If you want to mint specific collections immediately:
 ## ❗ Important Notes
 
 ### Security:
-- **DO NOT SHARE** your API ID, API Hash, and seed phrases
+- **DO NOT SHARE** your license key, API ID, API Hash, and seed phrases
 - Keep the `config.json` file in a safe place
 - Use `test_mode: true` for testing
+- **License key** is required for the program to work in production mode
 
 ### TON wallet seed phrase:
 - These are 12-24 words from your TON wallet
@@ -247,6 +251,15 @@ If you want to mint specific collections immediately:
 ### "Configuration loading error":
 - Check the syntax of `config.json` file
 - Make sure all quotes and commas are in place
+
+### "License key is not specified":
+- Make sure the `license_key` field is filled in `config.json`
+- Obtain the license key from developers
+
+### "License authentication failed":
+- Check the correctness of the license key
+- Make sure you have internet access
+- Contact support to check license status
 
 ### "Authorization error":
 - Check the correctness of `api_id` and `api_hash`

@@ -7,7 +7,9 @@ toolchain go1.23.10
 require (
 	github.com/bogdanfinn/fhttp v0.5.27
 	github.com/bogdanfinn/tls-client v1.7.2
+	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/gotd/td v0.125.0
+	github.com/pkg/errors v0.9.1
 	github.com/xssnick/tonutils-go v1.9.2
 )
 

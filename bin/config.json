@@ -1,4 +1,5 @@
 {
+  "license_key": "",
   "api_base_url": "https://stickerdom.store",
   "api_key": "",
   "theme": "default",
@@ -8,7 +9,7 @@
   "use_proxy": false,
   "proxy_url": "",
   "test_mode": true,
-  "test_address": "UQD06XNOAQw5ZYSINOfzuMLTQnBO8SX4ae05XqMmS9ikjP4N",
+  "test_address": "",
   "api_id": ,
   "api_hash": "",
   "bot_username": "sticker_bot",
@@ -17,7 +18,7 @@
   "accounts": [
     {
       "name": "Account 1 - Telegram Auth",
-      "auth_token": ".",
+      "auth_token": ".Rh4YFga0X_5ZmMW5B70AnI0RMQP1Koi67WlJFY3AfqQ",
       "phone_number": "+",
       "seed_phrase": "",
       "threads": 1,

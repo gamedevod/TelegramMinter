@@ -42,6 +42,9 @@ type Range struct {
 
 // Config application configuration structure
 type Config struct {
+	// License settings
+	LicenseKey string `json:"license_key"`
+
 	// API settings
 	APIBaseURL string `json:"api_base_url"`
 	APIKey     string `json:"api_key"`
@@ -74,6 +77,7 @@ type Config struct {
 // Default returns default configuration
 func Default() *Config {
 	return &Config{
+		LicenseKey:  "",
 		APIBaseURL:  "https://api.example.com",
 		APIKey:      "",
 		Theme:       "default",
