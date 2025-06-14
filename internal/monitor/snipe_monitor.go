@@ -133,6 +133,7 @@ func (s *SnipeMonitor) initializeState() error {
 			if refreshErr != nil {
 				return fmt.Errorf("ошибка обновления токена: %v", refreshErr)
 			}
+			token = newToken // Обновляем токен для дальнейшего использования
 			// Повторяем запрос с новым токеном
 			collections, err = s.apiClient.GetCollections(newToken)
 			if err != nil {
@@ -196,6 +197,7 @@ func (s *SnipeMonitor) checkForNewItems() error {
 	}
 
 	collections, err := s.apiClient.GetCollections(token)
+	tokenWasRefreshed := false
 	if err != nil {
 		// Проверяем, является ли это ошибкой токена
 		if tokenErr, ok := err.(*TokenError); ok {
@@ -205,6 +207,8 @@ func (s *SnipeMonitor) checkForNewItems() error {
 			if refreshErr != nil {
 				return fmt.Errorf("ошибка обновления токена: %v", refreshErr)
 			}
+			tokenWasRefreshed = true
+			token = newToken // Обновляем токен для дальнейшего использования
 			// Повторяем запрос с новым токеном
 			collections, err = s.apiClient.GetCollections(newToken)
 			if err != nil {
@@ -217,6 +221,35 @@ func (s *SnipeMonitor) checkForNewItems() error {
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
+	// Если токен был обновлен и состояние пустое, выполняем повторную инициализацию
+	if tokenWasRefreshed && len(s.knownCollections) == 0 {
+		s.log("🔄 Токен был обновлен и состояние пустое, выполняем повторную инициализацию...")
+
+		// Запоминаем все существующие коллекции как известные (не новые)
+		for _, collection := range collections.Data {
+			s.knownCollections[collection.ID] = true
+
+			// Получаем детали коллекции для запоминания персонажей
+			details, err := s.apiClient.GetCollectionDetails(token, collection.ID)
+			if err != nil {
+				s.log("⚠️ Ошибка получения деталей коллекции %d при реинициализации: %v", collection.ID, err)
+				continue
+			}
+
+			// Запоминаем всех персонажей
+			for _, character := range details.Data.Characters {
+				key := fmt.Sprintf("%d:%d", collection.ID, character.ID)
+				s.knownCharacters[key] = true
+			}
+		}
+
+		s.log("🔄 Реинициализация завершена: %d коллекций, %d персонажей помечены как известные",
+			len(s.knownCollections), len(s.knownCharacters))
+
+		// После реинициализации не проверяем коллекции как новые
+		return nil
+	}
 
 	// Проверяем новые коллекции
 	for _, collection := range collections.Data {
