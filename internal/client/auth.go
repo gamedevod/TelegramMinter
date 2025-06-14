@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-// AuthData структура для хранения данных авторизации
+// AuthData structure for storing authentication data
 type AuthData struct {
 	Data string    `json:"data"`
 	Exp  time.Time `json:"exp"`
 }
 
-// NewAuthData создает новый AuthData с данными и временем истечения
+// NewAuthData creates new AuthData with data and expiration time
 func NewAuthData(data string, exp time.Time) *AuthData {
 	return &AuthData{
 		Data: data,
@@ -21,30 +21,30 @@ func NewAuthData(data string, exp time.Time) *AuthData {
 	}
 }
 
-// IsValid проверяет, действительны ли данные авторизации
+// IsValid checks if authentication data is valid
 func (ad *AuthData) IsValid() bool {
 	return time.Now().Before(ad.Exp)
 }
 
-// AuthResponse ответ от API авторизации
+// AuthResponse response from authentication API
 type AuthResponse struct {
 	OK   bool   `json:"ok"`
-	Data string `json:"data"` // Bearer токен
+	Data string `json:"data"` // Bearer token
 }
 
-// TelegramAuthResponse структура ответа авторизации
+// TelegramAuthResponse authentication response structure
 type TelegramAuthResponse struct {
 	Status      string      `json:"status"`
 	Description string      `json:"description"`
 	Data        interface{} `json:"data"`
 }
 
-// AuthenticateWithTelegramData выполняет авторизацию отправив authData на API
+// AuthenticateWithTelegramData performs authentication by sending authData to API
 func (c *HTTPClient) AuthenticateWithTelegramData(apiURL string, authData *AuthData) (*TelegramAuthResponse, error) {
-	// Логируем данные которые отправляем
-	fmt.Printf("🔍 Отправляемые данные: %s\n", authData.Data[:min(100, len(authData.Data))])
+	// Log data being sent
+	fmt.Printf("🔍 Data being sent: %s\n", authData.Data[:min(100, len(authData.Data))])
 
-	// Отправляем данные как raw text (как в curl)
+	// Send data as raw text (as in curl)
 	rawData := authData.Data
 
 	headers := map[string]string{
@@ -63,7 +63,7 @@ func (c *HTTPClient) AuthenticateWithTelegramData(apiURL string, authData *AuthD
 		"TE":              "trailers",
 	}
 
-	// Отправляем POST запрос на правильный endpoint
+	// Send POST request to correct endpoint
 	resp, err := c.Post(fmt.Sprintf("%s/auth", apiURL), rawData, headers)
 	if err != nil {
 		return &TelegramAuthResponse{
@@ -73,7 +73,7 @@ func (c *HTTPClient) AuthenticateWithTelegramData(apiURL string, authData *AuthD
 	}
 	defer resp.Body.Close()
 
-	// Читаем ответ
+	// Read response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return &TelegramAuthResponse{
@@ -82,7 +82,7 @@ func (c *HTTPClient) AuthenticateWithTelegramData(apiURL string, authData *AuthD
 		}, err
 	}
 
-	// Логируем ответ для отладки
+	// Log response for debugging
 	fmt.Printf("🔍 API Response: %s\n", string(body))
 
 	if resp.StatusCode == 200 {
@@ -114,7 +114,7 @@ func (c *HTTPClient) AuthenticateWithTelegramData(apiURL string, authData *AuthD
 	}
 }
 
-// min возвращает минимальное значение
+// min returns minimum value
 func min(a, b int) int {
 	if a < b {
 		return a

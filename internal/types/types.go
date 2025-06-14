@@ -2,7 +2,7 @@ package types
 
 import "time"
 
-// Sticker представляет стикер
+// Sticker represents a sticker
 type Sticker struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -13,7 +13,7 @@ type Sticker struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// StickerPack представляет набор стикеров
+// StickerPack represents a sticker pack
 type StickerPack struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -23,14 +23,14 @@ type StickerPack struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// User представляет пользователя
+// User represents a user
 type User struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 }
 
-// APIResponse общая структура ответа API
+// APIResponse common API response structure
 type APIResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
@@ -38,7 +38,7 @@ type APIResponse struct {
 	Error   string      `json:"error,omitempty"`
 }
 
-// BuyResponse ответ на запрос покупки стикеров
+// BuyResponse response to sticker purchase request
 type BuyResponse struct {
 	OK        bool        `json:"ok"`
 	ErrorCode string      `json:"errorCode,omitempty"`
@@ -46,7 +46,7 @@ type BuyResponse struct {
 	Data      interface{} `json:"data,omitempty"`
 }
 
-// BuyRequest параметры для покупки стикеров
+// BuyRequest parameters for sticker purchase
 type BuyRequest struct {
 	Collection int    `json:"collection"`
 	Character  int    `json:"character"`
@@ -54,7 +54,7 @@ type BuyRequest struct {
 	Count      int    `json:"count"`
 }
 
-// Statistics статистика покупок
+// Statistics purchase statistics
 type Statistics struct {
 	TotalRequests    int           `json:"total_requests"`
 	SuccessRequests  int           `json:"success_requests"`
@@ -66,7 +66,7 @@ type Statistics struct {
 	RequestsPerSec   float64       `json:"requests_per_sec"`
 }
 
-// AppState состояние приложения
+// AppState application state
 type AppState struct {
 	CurrentUser  *User         `json:"current_user"`
 	StickerPacks []StickerPack `json:"sticker_packs"`
@@ -77,7 +77,7 @@ type AppState struct {
 	Statistics   *Statistics   `json:"statistics"`
 }
 
-// TransactionLog структура для логирования транзакций
+// TransactionLog structure for transaction logging
 type TransactionLog struct {
 	Timestamp     time.Time `json:"timestamp"`
 	AccountName   string    `json:"account_name"`

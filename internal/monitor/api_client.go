@@ -8,13 +8,13 @@ import (
 	"strings"
 )
 
-// APIClient клиент для работы с API коллекций
+// APIClient client for working with collections API
 type APIClient struct {
 	httpClient *client.HTTPClient
 	baseURL    string
 }
 
-// NewAPIClient создает новый API клиент
+// NewAPIClient creates a new API client
 func NewAPIClient(httpClient *client.HTTPClient) *APIClient {
 	return &APIClient{
 		httpClient: httpClient,
@@ -22,30 +22,30 @@ func NewAPIClient(httpClient *client.HTTPClient) *APIClient {
 	}
 }
 
-// APIResponse структура для проверки ошибок токенов
+// APIResponse structure for checking token errors
 type APIResponse struct {
 	OK        bool   `json:"ok"`
 	ErrorCode string `json:"errorCode"`
 }
 
-// TokenError ошибка токена
+// TokenError token error
 type TokenError struct {
 	StatusCode int
 	Body       string
 }
 
 func (e *TokenError) Error() string {
-	return fmt.Sprintf("ошибка токена: статус %d, тело: %s", e.StatusCode, e.Body)
+	return fmt.Sprintf("token error: status %d, body: %s", e.StatusCode, e.Body)
 }
 
-// isTokenError проверяет, является ли ответ ошибкой токена
+// isTokenError checks if the response is a token error
 func (a *APIClient) isTokenError(statusCode int, bodyStr string) bool {
-	// Проверяем на ошибку токена
+	// Check for token error
 	isTokenError := statusCode == 401 || statusCode == 403 ||
 		strings.Contains(bodyStr, "invalid_auth_token") ||
 		strings.Contains(bodyStr, "unauthorized")
 
-	// Дополнительная проверка через JSON парсинг
+	// Additional check through JSON parsing
 	if !isTokenError {
 		var errorResp APIResponse
 		if err := json.Unmarshal([]byte(bodyStr), &errorResp); err == nil {
@@ -58,7 +58,7 @@ func (a *APIClient) isTokenError(statusCode int, bodyStr string) bool {
 	return isTokenError
 }
 
-// GetCollections получает список коллекций
+// GetCollections gets the list of collections
 func (a *APIClient) GetCollections(authToken string) (*CollectionsResponse, error) {
 	url := fmt.Sprintf("%s/collections", a.baseURL)
 
@@ -80,16 +80,16 @@ func (a *APIClient) GetCollections(authToken string) (*CollectionsResponse, erro
 
 	resp, err := a.httpClient.Get(url, headers)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка GET запроса: %v", err)
+		return nil, fmt.Errorf("GET request error: %v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения ответа: %v", err)
+		return nil, fmt.Errorf("response reading error: %v", err)
 	}
 
-	// Проверяем на ошибку токена
+	// Check for token error
 	if a.isTokenError(resp.StatusCode, string(body)) {
 		return nil, &TokenError{
 			StatusCode: resp.StatusCode,
@@ -98,22 +98,22 @@ func (a *APIClient) GetCollections(authToken string) (*CollectionsResponse, erro
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("неуспешный статус код: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unsuccessful status code: %d", resp.StatusCode)
 	}
 
 	var response CollectionsResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("ошибка парсинга JSON: %v", err)
+		return nil, fmt.Errorf("JSON parsing error: %v", err)
 	}
 
 	if !response.OK {
-		return nil, fmt.Errorf("API вернул ok=false")
+		return nil, fmt.Errorf("API returned ok=false")
 	}
 
 	return &response, nil
 }
 
-// GetCollectionDetails получает детали коллекции по ID
+// GetCollectionDetails gets collection details by ID
 func (a *APIClient) GetCollectionDetails(authToken string, collectionID int) (*CollectionDetailsResponse, error) {
 	url := fmt.Sprintf("%s/collection/%d", a.baseURL, collectionID)
 
@@ -135,16 +135,16 @@ func (a *APIClient) GetCollectionDetails(authToken string, collectionID int) (*C
 
 	resp, err := a.httpClient.Get(url, headers)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка GET запроса: %v", err)
+		return nil, fmt.Errorf("GET request error: %v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения ответа: %v", err)
+		return nil, fmt.Errorf("response reading error: %v", err)
 	}
 
-	// Проверяем на ошибку токена
+	// Check for token error
 	if a.isTokenError(resp.StatusCode, string(body)) {
 		return nil, &TokenError{
 			StatusCode: resp.StatusCode,
@@ -153,16 +153,16 @@ func (a *APIClient) GetCollectionDetails(authToken string, collectionID int) (*C
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("неуспешный статус код: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unsuccessful status code: %d", resp.StatusCode)
 	}
 
 	var response CollectionDetailsResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("ошибка парсинга JSON: %v", err)
+		return nil, fmt.Errorf("JSON parsing error: %v", err)
 	}
 
 	if !response.OK {
-		return nil, fmt.Errorf("API вернул ok=false")
+		return nil, fmt.Errorf("API returned ok=false")
 	}
 
 	return &response, nil

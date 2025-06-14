@@ -12,7 +12,7 @@ import (
 	"stickersbot/internal/config"
 )
 
-// PurchaseRequest структура запроса на покупку
+// PurchaseRequest represents a purchase request structure
 type PurchaseRequest struct {
 	CollectionID int
 	CharacterID  int
@@ -21,16 +21,16 @@ type PurchaseRequest struct {
 	Name         string
 }
 
-// PurchaseCallback функция обратного вызова для покупки
+// PurchaseCallback is a callback function for purchase
 type PurchaseCallback func(request PurchaseRequest) error
 
-// TokenCallback функция обратного вызова для получения валидного токена
+// TokenCallback is a callback function for getting a valid token
 type TokenCallback func(accountName string) (string, error)
 
-// TokenRefreshCallback функция обратного вызова для обновления токена при ошибке
+// TokenRefreshCallback is a callback function for refreshing token on error
 type TokenRefreshCallback func(accountName string, statusCode int) (string, error)
 
-// SnipeMonitor структура снайп монитора
+// SnipeMonitor represents snipe monitor structure
 type SnipeMonitor struct {
 	config               *config.Account
 	apiClient            *APIClient
@@ -39,25 +39,25 @@ type SnipeMonitor struct {
 	tokenCallback        TokenCallback
 	tokenRefreshCallback TokenRefreshCallback
 
-	// Состояние
-	knownCollections map[int]bool    // ID известных коллекций
-	knownCharacters  map[string]bool // "collectionID:characterID" известных персонажей
+	// State
+	knownCollections map[int]bool    // IDs of known collections
+	knownCharacters  map[string]bool // "collectionID:characterID" of known characters
 	mutex            sync.RWMutex
 
-	// Управление жизненным циклом
+	// Lifecycle management
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	// Логирование
+	// Logging
 	logPrefix        string
 	collectionLogger *CollectionLogger
 }
 
-// NewSnipeMonitor создает новый снайп монитор
+// NewSnipeMonitor creates a new snipe monitor
 func NewSnipeMonitor(account *config.Account, httpClient *client.HTTPClient, purchaseCallback PurchaseCallback, tokenCallback TokenCallback, tokenRefreshCallback TokenRefreshCallback) *SnipeMonitor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Создаем имя файла для логов коллекций
+	// Create filename for collection logs
 	logFilename := fmt.Sprintf("found_collections_%s.json", strings.ReplaceAll(account.Name, " ", "_"))
 
 	return &SnipeMonitor{
@@ -76,102 +76,102 @@ func NewSnipeMonitor(account *config.Account, httpClient *client.HTTPClient, pur
 	}
 }
 
-// Start запускает снайп монитор
+// Start launches the snipe monitor
 func (s *SnipeMonitor) Start() error {
 	if s.config.SnipeMonitor == nil || !s.config.SnipeMonitor.Enabled {
-		return fmt.Errorf("снайп\ монитор\ не\ включен")
+		return fmt.Errorf("snipe monitor is not enabled")
 	}
 
 	if s.config.AuthToken == "" {
-		return fmt.Errorf("отсутствует\ токен\ авторизации")
+		return fmt.Errorf("authorization token is missing")
 	}
 
-	s.log("🎯 Снайп монитор запущен")
-	s.log("📊 Настройки:")
+	s.log("🎯 Snipe monitor started")
+	s.log("📊 Settings:")
 	if s.config.SnipeMonitor.SupplyRange != nil {
 		s.log("   Supply: %d - %d", s.config.SnipeMonitor.SupplyRange.Min, s.config.SnipeMonitor.SupplyRange.Max)
 	}
 	if s.config.SnipeMonitor.PriceRange != nil {
-		s.log("   Price: %d - %d нанотон", s.config.SnipeMonitor.PriceRange.Min, s.config.SnipeMonitor.PriceRange.Max)
+		s.log("   Price: %d - %d nanoton", s.config.SnipeMonitor.PriceRange.Min, s.config.SnipeMonitor.PriceRange.Max)
 	}
 	if len(s.config.SnipeMonitor.WordFilter) > 0 {
-		s.log("   Фильтр слов: %v", s.config.SnipeMonitor.WordFilter)
+		s.log("   Word filter: %v", s.config.SnipeMonitor.WordFilter)
 	}
 
-	// Инициализируем состояние - получаем текущие коллекции
+	// Initialize state - get current collections
 	if err := s.initializeState(); err != nil {
-		s.log("⚠️ Ошибка инициализации состояния: %v", err)
+		s.log("⚠️ State initialization error: %v", err)
 	}
 
-	// Запускаем основной цикл мониторинга
+	// Start main monitoring loop
 	go s.monitorLoop()
 
 	return nil
 }
 
-// Stop останавливает снайп монитор
+// Stop stops the snipe monitor
 func (s *SnipeMonitor) Stop() {
-	s.log("🛑 Остановка снайп монитора")
+	s.log("🛑 Stopping snipe monitor")
 	s.cancel()
 }
 
-// initializeState инициализирует состояние монитора
+// initializeState initializes monitor state
 func (s *SnipeMonitor) initializeState() error {
-	// Получаем валидный токен
+	// Get valid token
 	token, err := s.tokenCallback(s.config.Name)
 	if err != nil {
-		return fmt.Errorf("ошибка получения токена: %v", err)
+		return fmt.Errorf("error getting token: %v", err)
 	}
 
 	collections, err := s.apiClient.GetCollections(token)
 	if err != nil {
-		// Проверяем, является ли это ошибкой токена
+		// Check if this is a token error
 		if tokenErr, ok := err.(*TokenError); ok {
-			s.log("🔑 Ошибка токена при инициализации: %v", tokenErr)
-			// Пытаемся обновить токен
+			s.log("🔑 Token error during initialization: %v", tokenErr)
+			// Try to refresh token
 			newToken, refreshErr := s.tokenRefreshCallback(s.config.Name, tokenErr.StatusCode)
 			if refreshErr != nil {
-				return fmt.Errorf("ошибка обновления токена: %v", refreshErr)
+				return fmt.Errorf("error refreshing token: %v", refreshErr)
 			}
-			token = newToken // Обновляем токен для дальнейшего использования
-			// Повторяем запрос с новым токеном
+			token = newToken // Update token for further use
+			// Retry request with new token
 			collections, err = s.apiClient.GetCollections(newToken)
 			if err != nil {
-				return fmt.Errorf("ошибка получения коллекций после обновления токена: %v", err)
+				return fmt.Errorf("error getting collections after token refresh: %v", err)
 			}
 		} else {
-			return fmt.Errorf("ошибка получения коллекций: %v", err)
+			return fmt.Errorf("error getting collections: %v", err)
 		}
 	}
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// Запоминаем все существующие коллекции
+	// Remember all existing collections
 	for _, collection := range collections.Data {
 		s.knownCollections[collection.ID] = true
 
-		// Получаем детали коллекции для запоминания персонажей
+		// Get collection details to remember characters
 		details, err := s.apiClient.GetCollectionDetails(token, collection.ID)
 		if err != nil {
-			s.log("⚠️ Ошибка получения деталей коллекции %d: %v", collection.ID, err)
+			s.log("⚠️ Error getting collection details %d: %v", collection.ID, err)
 			continue
 		}
 
-		// Запоминаем всех персонажей
+		// Remember all characters
 		for _, character := range details.Data.Characters {
 			key := fmt.Sprintf("%d:%d", collection.ID, character.ID)
 			s.knownCharacters[key] = true
 		}
 	}
 
-	s.log("📋 Инициализировано: %d коллекций, %d персонажей",
+	s.log("📋 Initialized: %d collections, %d characters",
 		len(s.knownCollections), len(s.knownCharacters))
 
 	return nil
 }
 
-// monitorLoop основной цикл мониторинга
+// monitorLoop is the main monitoring loop
 func (s *SnipeMonitor) monitorLoop() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
@@ -182,133 +182,133 @@ func (s *SnipeMonitor) monitorLoop() {
 			return
 		case <-ticker.C:
 			if err := s.checkForNewItems(); err != nil {
-				s.log("❌ Ошибка проверки: %v", err)
+				s.log("❌ Check error: %v", err)
 			}
 		}
 	}
 }
 
-// checkForNewItems проверяет новые коллекции и персонажи
+// checkForNewItems checks for new collections and characters
 func (s *SnipeMonitor) checkForNewItems() error {
-	// Получаем кешированный токен (без API проверки)
+	// Get cached token (without API verification)
 	token, err := s.tokenCallback(s.config.Name)
 	if err != nil {
-		return fmt.Errorf("ошибка получения токена: %v", err)
+		return fmt.Errorf("error getting token: %v", err)
 	}
 
 	collections, err := s.apiClient.GetCollections(token)
 	tokenWasRefreshed := false
 	if err != nil {
-		// Проверяем, является ли это ошибкой токена
+		// Check if this is a token error
 		if tokenErr, ok := err.(*TokenError); ok {
-			s.log("🔑 Ошибка токена при мониторинге: %v", tokenErr)
-			// Пытаемся обновить токен
+			s.log("�� Token error during monitoring: %v", tokenErr)
+			// Try to refresh token
 			newToken, refreshErr := s.tokenRefreshCallback(s.config.Name, tokenErr.StatusCode)
 			if refreshErr != nil {
-				return fmt.Errorf("ошибка обновления токена: %v", refreshErr)
+				return fmt.Errorf("error refreshing token: %v", refreshErr)
 			}
 			tokenWasRefreshed = true
-			token = newToken // Обновляем токен для дальнейшего использования
-			// Повторяем запрос с новым токеном
+			token = newToken // Update token for further use
+			// Retry request with new token
 			collections, err = s.apiClient.GetCollections(newToken)
 			if err != nil {
-				return fmt.Errorf("ошибка получения коллекций после обновления токена: %v", err)
+				return fmt.Errorf("error getting collections after token refresh: %v", err)
 			}
 		} else {
-			return fmt.Errorf("ошибка получения коллекций: %v", err)
+			return fmt.Errorf("error getting collections: %v", err)
 		}
 	}
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// Если токен был обновлен и состояние пустое, выполняем повторную инициализацию
+	// If token was refreshed and state is empty, perform reinitialization
 	if tokenWasRefreshed && len(s.knownCollections) == 0 {
-		s.log("🔄 Токен был обновлен и состояние пустое, выполняем повторную инициализацию...")
+		s.log("🔄 Token was refreshed and state is empty, performing reinitialization...")
 
-		// Запоминаем все существующие коллекции как известные (не новые)
+		// Remember all existing collections as known (not new)
 		for _, collection := range collections.Data {
 			s.knownCollections[collection.ID] = true
 
-			// Получаем детали коллекции для запоминания персонажей
+			// Get collection details to remember characters
 			details, err := s.apiClient.GetCollectionDetails(token, collection.ID)
 			if err != nil {
-				s.log("⚠️ Ошибка получения деталей коллекции %d при реинициализации: %v", collection.ID, err)
+				s.log("⚠️ Error getting collection details %d during reinitialization: %v", collection.ID, err)
 				continue
 			}
 
-			// Запоминаем всех персонажей
+			// Remember all characters
 			for _, character := range details.Data.Characters {
 				key := fmt.Sprintf("%d:%d", collection.ID, character.ID)
 				s.knownCharacters[key] = true
 			}
 		}
 
-		s.log("🔄 Реинициализация завершена: %d коллекций, %d персонажей помечены как известные",
+		s.log("🔄 Reinitialization completed: %d collections, %d characters marked as known",
 			len(s.knownCollections), len(s.knownCharacters))
 
-		// После реинициализации не проверяем коллекции как новые
+		// After reinitialization, do not check collections as new
 		return nil
 	}
 
-	// Проверяем новые коллекции
+	// Check for new collections
 	for _, collection := range collections.Data {
 		if !s.knownCollections[collection.ID] {
-			s.log("🆕 Найдена новая коллекция: %d - %s", collection.ID, collection.Title)
+			s.log("🆕 New collection found: %d - %s", collection.ID, collection.Title)
 			s.knownCollections[collection.ID] = true
 
-			// Проверяем коллекцию на соответствие фильтрам
+			// Check collection against filters
 			if err := s.checkCollection(collection); err != nil {
-				s.log("⚠️ Ошибка проверки коллекции %d: %v", collection.ID, err)
+				s.log("⚠️ Collection check error %d: %v", collection.ID, err)
 			}
 		}
 
-		// Проверяем новых персонажей в существующих коллекциях
+		// Check for new characters in existing collections
 		if err := s.checkCollectionForNewCharacters(collection.ID); err != nil {
-			s.log("⚠️ Ошибка проверки персонажей коллекции %d: %v", collection.ID, err)
+			s.log("⚠️ Character check error in collection %d: %v", collection.ID, err)
 		}
 	}
 
 	return nil
 }
 
-// checkCollection проверяет коллекцию на соответствие фильтрам
+// checkCollection checks collection against filters
 func (s *SnipeMonitor) checkCollection(collection Collection) error {
-	// Получаем кешированный токен (без API проверки)
+	// Get cached token (without API verification)
 	token, err := s.tokenCallback(s.config.Name)
 	if err != nil {
-		return fmt.Errorf("ошибка получения токена: %v", err)
+		return fmt.Errorf("error getting token: %v", err)
 	}
 
 	details, err := s.apiClient.GetCollectionDetails(token, collection.ID)
 	if err != nil {
-		// Если ошибка авторизации, токен будет обновлен автоматически в buyer.go
-		return fmt.Errorf("ошибка получения деталей коллекции: %v", err)
+		// If authorization error, token will be refreshed automatically in buyer.go
+		return fmt.Errorf("error getting collection details: %v", err)
 	}
 
-	// Проверяем фильтр по словам
+	// Check word filter
 	if !s.matchesWordFilter(collection.Title) {
-		s.log("🚫 Коллекция %d не прошла фильтр по словам: %s", collection.ID, collection.Title)
+		s.log("🚫 Collection %d did not pass word filter: %s", collection.ID, collection.Title)
 		return nil
 	}
 
-	// Проверяем каждого персонажа
+	// Check each character
 	for _, character := range details.Data.Characters {
 		key := fmt.Sprintf("%d:%d", collection.ID, character.ID)
 		s.knownCharacters[key] = true
 
 		if s.matchesFilters(character) {
-			s.log("✅ Найден подходящий персонаж: %s (ID: %d, Цена: %d, Supply: %d)",
+			s.log("✅ Suitable character found: %s (ID: %d, Price: %d, Supply: %d)",
 				character.Name, character.ID, character.Price, character.Supply)
 
-			// Логируем найденную коллекцию в файл
+			// Log found collection to file
 			if err := s.collectionLogger.LogFoundCollection(collection, character, s.config.Name); err != nil {
-				s.log("⚠️ Ошибка сохранения коллекции в лог: %v", err)
+				s.log("⚠️ Error saving collection to log: %v", err)
 			} else {
-				s.log("💾 Коллекция сохранена в лог файл")
+				s.log("💾 Collection saved to log file")
 			}
 
-			// Отправляем запрос на покупку
+			// Send purchase request
 			request := PurchaseRequest{
 				CollectionID: collection.ID,
 				CharacterID:  character.ID,
@@ -318,7 +318,7 @@ func (s *SnipeMonitor) checkCollection(collection Collection) error {
 			}
 
 			if err := s.purchaseCallback(request); err != nil {
-				s.log("❌ Ошибка покупки: %v", err)
+				s.log("❌ Purchase error: %v", err)
 			}
 		}
 	}
@@ -326,46 +326,46 @@ func (s *SnipeMonitor) checkCollection(collection Collection) error {
 	return nil
 }
 
-// checkCollectionForNewCharacters проверяет новых персонажей в коллекции
+// checkCollectionForNewCharacters checks for new characters in collection
 func (s *SnipeMonitor) checkCollectionForNewCharacters(collectionID int) error {
-	// Получаем кешированный токен (без API проверки)
+	// Get cached token (without API verification)
 	token, err := s.tokenCallback(s.config.Name)
 	if err != nil {
-		return fmt.Errorf("ошибка получения токена: %v", err)
+		return fmt.Errorf("error getting token: %v", err)
 	}
 
 	details, err := s.apiClient.GetCollectionDetails(token, collectionID)
 	if err != nil {
-		// Если ошибка авторизации, токен будет обновлен автоматически в buyer.go
-		return fmt.Errorf("ошибка получения деталей коллекции: %v", err)
+		// If authorization error, token will be refreshed automatically in buyer.go
+		return fmt.Errorf("error getting collection details: %v", err)
 	}
 
 	for _, character := range details.Data.Characters {
 		key := fmt.Sprintf("%d:%d", collectionID, character.ID)
 
 		if !s.knownCharacters[key] {
-			s.log("🆕 Найден новый персонаж: %s в коллекции %d", character.Name, collectionID)
+			s.log("🆕 New character found: %s in collection %d", character.Name, collectionID)
 			s.knownCharacters[key] = true
 
-			// Проверяем фильтр по словам для названия коллекции
+			// Check word filter for collection title
 			if !s.matchesWordFilter(details.Data.Collection.Title) {
-				s.log("🚫 Персонаж %d не прошел фильтр по словам коллекции: %s",
+				s.log("🚫 Character %d did not pass collection word filter: %s",
 					character.ID, details.Data.Collection.Title)
 				continue
 			}
 
 			if s.matchesFilters(character) {
-				s.log("✅ Найден подходящий новый персонаж: %s (ID: %d, Цена: %d, Supply: %d)",
+				s.log("✅ Suitable new character found: %s (ID: %d, Price: %d, Supply: %d)",
 					character.Name, character.ID, character.Price, character.Supply)
 
-				// Логируем найденную коллекцию в файл
+				// Log found collection to file
 				if err := s.collectionLogger.LogFoundCollection(details.Data.Collection, character, s.config.Name); err != nil {
-					s.log("⚠️ Ошибка сохранения коллекции в лог: %v", err)
+					s.log("⚠️ Error saving collection to log: %v", err)
 				} else {
-					s.log("💾 Коллекция сохранена в лог файл")
+					s.log("💾 Collection saved to log file")
 				}
 
-				// Отправляем запрос на покупку
+				// Send purchase request
 				request := PurchaseRequest{
 					CollectionID: collectionID,
 					CharacterID:  character.ID,
@@ -375,7 +375,7 @@ func (s *SnipeMonitor) checkCollectionForNewCharacters(collectionID int) error {
 				}
 
 				if err := s.purchaseCallback(request); err != nil {
-					s.log("❌ Ошибка покупки: %v", err)
+					s.log("❌ Purchase error: %v", err)
 				}
 			}
 		}
@@ -384,16 +384,16 @@ func (s *SnipeMonitor) checkCollectionForNewCharacters(collectionID int) error {
 	return nil
 }
 
-// matchesWordFilter проверяет соответствие фильтру по словам
+// matchesWordFilter checks against word filter
 func (s *SnipeMonitor) matchesWordFilter(title string) bool {
-	// Если фильтр не задан, пропускаем всё
+	// If filter not specified, skip all
 	if len(s.config.SnipeMonitor.WordFilter) == 0 {
 		return true
 	}
 
 	titleLower := strings.ToLower(title)
 
-	// Проверяем наличие хотя бы одного слова из фильтра
+	// Check for presence of at least one word from filter
 	for _, word := range s.config.SnipeMonitor.WordFilter {
 		if strings.Contains(titleLower, strings.ToLower(word)) {
 			return true
@@ -403,24 +403,24 @@ func (s *SnipeMonitor) matchesWordFilter(title string) bool {
 	return false
 }
 
-// matchesFilters проверяет соответствие персонажа всем фильтрам
+// matchesFilters checks against all filters
 func (s *SnipeMonitor) matchesFilters(character Character) bool {
-	// Проверяем диапазон количества
+	// Check quantity range
 	if s.config.SnipeMonitor.SupplyRange != nil {
 		if character.Supply < s.config.SnipeMonitor.SupplyRange.Min ||
 			character.Supply > s.config.SnipeMonitor.SupplyRange.Max {
-			s.log("🚫 Персонаж %s не прошел фильтр по supply: %d (нужно: %d-%d)",
+			s.log("🚫 Character %s did not pass supply filter: %d (need: %d-%d)",
 				character.Name, character.Supply,
 				s.config.SnipeMonitor.SupplyRange.Min, s.config.SnipeMonitor.SupplyRange.Max)
 			return false
 		}
 	}
 
-	// Проверяем диапазон цен
+	// Check price range
 	if s.config.SnipeMonitor.PriceRange != nil {
 		if character.Price < s.config.SnipeMonitor.PriceRange.Min ||
 			character.Price > s.config.SnipeMonitor.PriceRange.Max {
-			s.log("🚫 Персонаж %s не прошел фильтр по цене: %d (нужно: %d-%d)",
+			s.log("🚫 Character %s did not pass price filter: %d (need: %d-%d)",
 				character.Name, character.Price,
 				s.config.SnipeMonitor.PriceRange.Min, s.config.SnipeMonitor.PriceRange.Max)
 			return false
@@ -430,7 +430,7 @@ func (s *SnipeMonitor) matchesFilters(character Character) bool {
 	return true
 }
 
-// log выводит лог с префиксом
+// log outputs log with prefix
 func (s *SnipeMonitor) log(format string, args ...interface{}) {
 	message := fmt.Sprintf(format, args...)
 	log.Printf("%s %s", s.logPrefix, message)

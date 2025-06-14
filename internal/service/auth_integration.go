@@ -12,39 +12,39 @@ import (
 	"stickersbot/internal/telegram"
 )
 
-// AuthIntegration интегрирует Telegram авторизацию в основной сервис
+// AuthIntegration integrates Telegram authentication into the main service
 type AuthIntegration struct {
 	config *config.Config
 }
 
-// NewAuthIntegration создает новый интеграционный сервис
+// NewAuthIntegration creates a new integration service
 func NewAuthIntegration(cfg *config.Config) *AuthIntegration {
 	return &AuthIntegration{config: cfg}
 }
 
-// AuthorizeAccounts выполняет авторизацию для всех аккаунтов, которым это требуется
+// AuthorizeAccounts performs authorization for all accounts that require it
 func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 	for i, account := range ai.config.Accounts {
 		if ai.needsTelegramAuth(account) {
-			log.Printf("🔐 Авторизация Telegram для аккаунта: %s", account.Name)
+			log.Printf("🔐 Telegram authorization for account: %s", account.Name)
 
-			// Определяем путь к файлу сессии
+			// Determine session file path
 			sessionFile := account.SessionFile
 			if sessionFile == "" {
-				// Создаем имя файла сессии на основе номера телефона
+				// Create session filename based on phone number
 				cleanPhone := strings.ReplaceAll(account.PhoneNumber, "+", "")
 				sessionFile = filepath.Join("sessions", fmt.Sprintf("%s.session", cleanPhone))
 			}
 
-			// Создаем директорию для сессий если её нет
+			// Create sessions directory if it doesn't exist
 			sessionDir := filepath.Dir(sessionFile)
 			if err := os.MkdirAll(sessionDir, 0755); err != nil {
-				return fmt.Errorf("создание директории сессий %s: %w", sessionDir, err)
+				return fmt.Errorf("creating sessions directory %s: %w", sessionDir, err)
 			}
 
-			log.Printf("📁 Session файл будет создан/использован: %s", sessionFile)
+			log.Printf("📁 Session file will be created/used: %s", sessionFile)
 
-			// Создаем сервис авторизации с общими параметрами
+			// Create authorization service with common parameters
 			authService := telegram.NewAuthService(
 				ai.config.APIId,
 				ai.config.APIHash,
@@ -55,46 +55,46 @@ func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 				ai.config.TokenAPIURL,
 			)
 
-			// Выполняем авторизацию
+			// Perform authorization
 			bearerToken, err := authService.AuthorizeAndGetToken(ctx)
 			if err != nil {
-				return fmt.Errorf("ошибка авторизации аккаунта %s: %w", account.Name, err)
+				return fmt.Errorf("error authorizing account %s: %w", account.Name, err)
 			}
 
-			// Сохраняем полученный токен
+			// Save received token
 			ai.config.Accounts[i].AuthToken = bearerToken
-			log.Printf("✅ Авторизация завершена для аккаунта: %s", account.Name)
+			log.Printf("✅ Authorization completed for account: %s", account.Name)
 		} else if account.AuthToken != "" {
-			log.Printf("✅ Аккаунт %s уже имеет Bearer токен", account.Name)
+			log.Printf("✅ Account %s already has Bearer token", account.Name)
 		} else {
-			log.Printf("⚠️  Аккаунт %s не настроен для Telegram авторизации", account.Name)
+			log.Printf("⚠️  Account %s is not configured for Telegram authorization", account.Name)
 		}
 	}
 
-	// Сохраняем конфигурацию с полученными токенами
+	// Save configuration with received tokens
 	if err := ai.saveConfig(); err != nil {
-		log.Printf("⚠️  Не удалось сохранить конфигурацию: %v", err)
+		log.Printf("⚠️  Failed to save configuration: %v", err)
 	}
 
 	return nil
 }
 
-// ValidateAccounts проверяет корректность настроек Telegram авторизации
+// ValidateAccounts checks the correctness of Telegram authorization settings
 func (ai *AuthIntegration) ValidateAccounts() []error {
 	var errors []error
 
 	for _, account := range ai.config.Accounts {
 		if ai.needsTelegramAuth(account) {
 			if ai.config.APIId == 0 {
-				errors = append(errors, fmt.Errorf("аккаунт %s: api_id не указан в общих настройках", account.Name))
+				errors = append(errors, fmt.Errorf("account %s: api_id not specified in common settings", account.Name))
 			}
 
 			if ai.config.APIHash == "" {
-				errors = append(errors, fmt.Errorf("аккаунт %s: api_hash не указан в общих настройках", account.Name))
+				errors = append(errors, fmt.Errorf("account %s: api_hash not specified in common settings", account.Name))
 			}
 
 			if account.PhoneNumber == "" {
-				errors = append(errors, fmt.Errorf("аккаунт %s: phone_number не указан", account.Name))
+				errors = append(errors, fmt.Errorf("account %s: phone_number not specified", account.Name))
 			}
 		}
 	}
@@ -102,19 +102,19 @@ func (ai *AuthIntegration) ValidateAccounts() []error {
 	return errors
 }
 
-// hasTelegramAuth проверяет, настроена ли Telegram авторизация для аккаунта
+// hasTelegramAuth checks if Telegram authorization is configured for the account
 func (ai *AuthIntegration) hasTelegramAuth(account config.Account) bool {
 	return account.PhoneNumber != "" &&
 		ai.config.APIId != 0 &&
 		ai.config.APIHash != ""
 }
 
-// needsTelegramAuth проверяет, нужна ли Telegram авторизация для аккаунта
+// needsTelegramAuth checks if Telegram authorization is needed for the account
 func (ai *AuthIntegration) needsTelegramAuth(account config.Account) bool {
 	return account.AuthToken == "" && ai.hasTelegramAuth(account)
 }
 
-// saveConfig сохраняет конфигурацию в файл
+// saveConfig saves configuration to file
 func (ai *AuthIntegration) saveConfig() error {
 	return ai.config.Save("config.json")
 }

@@ -13,37 +13,37 @@ import (
 	"github.com/xssnick/tonutils-go/ton/wallet"
 )
 
-// TONClient клиент для работы с TON блокчейном
+// TONClient client for working with TON blockchain
 type TONClient struct {
 	client *ton.APIClient
 	wallet *wallet.Wallet
 }
 
-// NewTONClient создает новый TON клиент
+// NewTONClient creates a new TON client
 func NewTONClient(seedPhrase string) (*TONClient, error) {
-	// Подключаемся к TON mainnet
+	// Connect to TON mainnet
 	connection := liteclient.NewConnectionPool()
 
-	// Добавляем публичные конфигурации
+	// Add public configurations
 	configUrl := "https://ton.org/global.config.json"
 	err := connection.AddConnectionsFromConfigUrl(context.Background(), configUrl)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка подключения к TON: %v", err)
+		return nil, fmt.Errorf("error connecting to TON: %v", err)
 	}
 
-	// Создаем API клиент
+	// Create API client
 	client := ton.NewAPIClient(connection)
 
-	// Создаем кошелек из seed фразы
+	// Create wallet from seed phrase
 	words := strings.Split(seedPhrase, " ")
 	if len(words) != 24 {
-		return nil, fmt.Errorf("неверное количество слов в seed фразе: %d (должно быть 24)", len(words))
+		return nil, fmt.Errorf("incorrect number of words in seed phrase: %d (should be 24)", len(words))
 	}
 
-	// Создаем кошелек из seed
+	// Create wallet from seed
 	w, err := wallet.FromSeed(client, words, wallet.V4R2)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка создания кошелька: %v", err)
+		return nil, fmt.Errorf("error creating wallet: %v", err)
 	}
 
 	return &TONClient{
@@ -52,7 +52,7 @@ func NewTONClient(seedPhrase string) (*TONClient, error) {
 	}, nil
 }
 
-// TransactionResult структура результата транзакции
+// TransactionResult transaction result structure
 type TransactionResult struct {
 	FromAddress   string
 	ToAddress     string
@@ -62,23 +62,23 @@ type TransactionResult struct {
 	Success       bool
 }
 
-// SendTON отправляет TON транзакцию и возвращает информацию о ней
+// SendTON sends TON transaction and returns information about it
 func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64, comment string, testMode bool, testAddress string) (*TransactionResult, error) {
-	// Если тестовый режим, используем тестовый адрес
+	// If test mode, use test address
 	if testMode && testAddress != "" {
 		toAddress = testAddress
 	}
 
-	// Парсим адрес получателя
+	// Parse recipient address
 	addr, err := address.ParseAddr(toAddress)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка парсинга адреса: %v", err)
+		return nil, fmt.Errorf("error parsing address: %v", err)
 	}
 
-	// Получаем адрес отправителя
+	// Get sender address
 	fromAddr := c.wallet.WalletAddress()
 
-	// Отправляем транзакцию
+	// Send transaction
 	err = c.wallet.Transfer(ctx, addr, tlb.FromNanoTONU(uint64(amount)), comment)
 	if err != nil {
 		return &TransactionResult{
@@ -88,14 +88,14 @@ func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64,
 			Amount:        amount,
 			Comment:       comment,
 			Success:       false,
-		}, fmt.Errorf("ошибка отправки транзакции: %v", err)
+		}, fmt.Errorf("error sending transaction: %v", err)
 	}
 
-	// Возвращаем результат с временным ID
+	// Return result with temporary ID
 	result := &TransactionResult{
 		FromAddress:   fromAddr.String(),
 		ToAddress:     toAddress,
-		TransactionID: fmt.Sprintf("tx_%d_%s", amount, comment), // Временный ID
+		TransactionID: fmt.Sprintf("tx_%d_%s", amount, comment), // Temporary ID
 		Amount:        amount,
 		Comment:       comment,
 		Success:       true,
@@ -104,7 +104,7 @@ func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64,
 	return result, nil
 }
 
-// GetBalance получает баланс кошелька
+// GetBalance gets wallet balance
 func (c *TONClient) GetBalance(ctx context.Context) (*big.Int, error) {
 	block, err := c.client.CurrentMasterchainInfo(ctx)
 	if err != nil {
@@ -119,7 +119,7 @@ func (c *TONClient) GetBalance(ctx context.Context) (*big.Int, error) {
 	return balance.NanoTON(), nil
 }
 
-// GetAddress возвращает адрес кошелька
+// GetAddress returns wallet address
 func (c *TONClient) GetAddress() *address.Address {
 	return c.wallet.WalletAddress()
 }

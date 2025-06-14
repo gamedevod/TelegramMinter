@@ -14,105 +14,105 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-// WebAppService сервис для работы с Telegram Web App
+// WebAppService service for working with Telegram Web App
 type WebAppService struct {
 	api         *tg.Client
-	botUsername string             // имя бота, через который получаем токен
-	webAppURL   string             // URL веб-приложения
-	httpClient  *client.HTTPClient // HTTP клиент для запросов
+	botUsername string             // bot name for token retrieval
+	webAppURL   string             // web application URL
+	httpClient  *client.HTTPClient // HTTP client for requests
 }
 
-// NewWebAppService создает новый сервис Web App
+// NewWebAppService creates a new Web App service
 func NewWebAppService(api *tg.Client, botUsername, webAppURL string) *WebAppService {
 	return &WebAppService{
 		api:         api,
 		botUsername: botUsername,
 		webAppURL:   webAppURL,
-		httpClient:  client.New(), // используем существующий HTTP клиент
+		httpClient:  client.New(), // use existing HTTP client
 	}
 }
 
-// GetBearerTokenFromWebApp получает Bearer токен через Web App
+// GetBearerTokenFromWebApp gets Bearer token through Web App
 func (w *WebAppService) GetBearerTokenFromWebApp(ctx context.Context, userID int64) (string, error) {
-	log.Printf("🌐 Запрос Bearer токена через Web App для бота: %s", w.botUsername)
+	log.Printf("🌐 Requesting Bearer token through Web App for bot: %s", w.botUsername)
 
-	// 1. Находим бота
+	// 1. Find bot
 	bot, err := w.findBot(ctx)
 	if err != nil {
-		return "", fmt.Errorf("поиск бота: %w", err)
+		return "", fmt.Errorf("bot search: %w", err)
 	}
 
-	// 2. Запрашиваем Web App
+	// 2. Request Web App
 	webAppData, err := w.requestWebApp(ctx, bot, userID)
 	if err != nil {
-		return "", fmt.Errorf("запрос Web App: %w", err)
+		return "", fmt.Errorf("Web App request: %w", err)
 	}
 
-	// 3. Извлекаем Bearer токен из данных Web App
+	// 3. Extract Bearer token from Web App data
 	token, err := w.extractBearerToken(webAppData)
 	if err != nil {
-		return "", fmt.Errorf("извлечение Bearer токена: %w", err)
+		return "", fmt.Errorf("Bearer token extraction: %w", err)
 	}
 
-	log.Printf("✅ Bearer токен получен через Web App: %s", maskToken(token))
+	log.Printf("✅ Bearer token obtained through Web App: %s", maskToken(token))
 	return token, nil
 }
 
-// GetBearerTokenFromBot получает Bearer токен отправив команду боту
+// GetBearerTokenFromBot gets Bearer token by sending command to bot
 func (w *WebAppService) GetBearerTokenFromBot(ctx context.Context, userID int64) (string, error) {
-	log.Printf("🤖 Запрос Bearer токена через команду боту: %s", w.botUsername)
+	log.Printf("🤖 Requesting Bearer token through bot command: %s", w.botUsername)
 
-	// 1. Находим бота
+	// 1. Find bot
 	bot, err := w.findBot(ctx)
 	if err != nil {
-		return "", fmt.Errorf("поиск бота: %w", err)
+		return "", fmt.Errorf("bot search: %w", err)
 	}
 
-	// 2. Отправляем команду /start или /token боту
+	// 2. Send /start or /token command to bot
 	token, err := w.sendTokenCommand(ctx, bot, userID)
 	if err != nil {
-		return "", fmt.Errorf("отправка команды боту: %w", err)
+		return "", fmt.Errorf("sending command to bot: %w", err)
 	}
 
-	log.Printf("✅ Bearer токен получен от бота: %s", maskToken(token))
+	log.Printf("✅ Bearer token obtained from bot: %s", maskToken(token))
 	return token, nil
 }
 
-// findBot находит бота по username
+// findBot finds bot by username
 func (w *WebAppService) findBot(ctx context.Context) (*tg.User, error) {
-	// Резолвим username бота
+	// Resolve bot username
 	resolved, err := w.api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
 		Username: w.botUsername,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("резолв username %s: %w", w.botUsername, err)
+		return nil, fmt.Errorf("username resolution %s: %w", w.botUsername, err)
 	}
 
-	// Ищем пользователя-бота
+	// Search for bot user
 	for _, user := range resolved.Users {
 		if u, ok := user.(*tg.User); ok && u.Bot {
 			return u, nil
 		}
 	}
 
-	return nil, fmt.Errorf("бот %s не найден", w.botUsername)
+	return nil, fmt.Errorf("bot %s not found", w.botUsername)
 }
 
-// requestWebApp запрашивает Web App у бота
+// requestWebApp requests Web App from bot
 func (w *WebAppService) requestWebApp(ctx context.Context, bot *tg.User, userID int64) (string, error) {
-	// Создаем input peer для бота
+	// Create input peer for bot
 	inputPeer := &tg.InputPeerUser{
 		UserID:     bot.ID,
 		AccessHash: bot.AccessHash,
 	}
 
-	// Создаем input user для бота
+	// Create input user for bot
 	inputUser := &tg.InputUser{
 		UserID:     bot.ID,
 		AccessHash: bot.AccessHash,
 	}
 
-	// Запрашиваем Web App
+	// Request Web App
 	webView, err := w.api.MessagesRequestWebView(ctx, &tg.MessagesRequestWebViewRequest{
 		Peer:     inputPeer,
 		Bot:      inputUser,
@@ -120,48 +120,48 @@ func (w *WebAppService) requestWebApp(ctx context.Context, bot *tg.User, userID 
 		Platform: "web",
 	})
 	if err != nil {
-		return "", fmt.Errorf("запрос Web App: %w", err)
+		return "", fmt.Errorf("Web App request: %w", err)
 	}
 
 	log.Printf("🔗 Web App URL: %s", webView.URL)
 
-	// Возвращаем полные данные URL для дальнейшей обработки
+	// Return full URL data for further processing
 	return webView.URL, nil
 }
 
-// sendTokenCommand отправляет команду боту для получения токена
+// sendTokenCommand sends command to bot to get token
 func (w *WebAppService) sendTokenCommand(ctx context.Context, bot *tg.User, userID int64) (string, error) {
-	// Создаем input peer для бота
+	// Create input peer for bot
 	inputPeer := &tg.InputPeerUser{
 		UserID:     bot.ID,
 		AccessHash: bot.AccessHash,
 	}
 
-	// Отправляем команду /token или /start
+	// Send /token or /start command
 	_, err := w.api.MessagesSendMessage(ctx, &tg.MessagesSendMessageRequest{
 		Peer:    inputPeer,
 		Message: "/token",
 	})
 	if err != nil {
-		return "", fmt.Errorf("отправка команды: %w", err)
+		return "", fmt.Errorf("sending command: %w", err)
 	}
 
-	log.Printf("📤 Команда /token отправлена боту")
+	log.Printf("📤 /token command sent to bot")
 
-	// Ждем ответа от бота (это упрощенная версия)
-	// В реальности нужно настроить обработчик сообщений
+	// Wait for bot response (simplified version)
+	// In reality, need to set up message handler
 	time.Sleep(2 * time.Second)
 
-	// Получаем последние сообщения
+	// Get recent messages
 	messages, err := w.api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
 		Peer:  inputPeer,
 		Limit: 10,
 	})
 	if err != nil {
-		return "", fmt.Errorf("получение истории: %w", err)
+		return "", fmt.Errorf("getting history: %w", err)
 	}
 
-	// Ищем токен в сообщениях
+	// Search for token in messages
 	if history, ok := messages.(*tg.MessagesMessages); ok {
 		for _, msg := range history.Messages {
 			if m, ok := msg.(*tg.Message); ok {
@@ -173,87 +173,87 @@ func (w *WebAppService) sendTokenCommand(ctx context.Context, bot *tg.User, user
 		}
 	}
 
-	return "", fmt.Errorf("токен не найден в ответах бота")
+	return "", fmt.Errorf("token not found in bot responses")
 }
 
-// extractBearerToken извлекает Bearer токен из данных Web App
+// extractBearerToken extracts Bearer token from Web App data
 func (w *WebAppService) extractBearerToken(webAppURL string) (string, error) {
-	log.Printf("🔍 Анализ Web App URL: %s", webAppURL)
+	log.Printf("🔍 Analyzing Web App URL: %s", webAppURL)
 
-	// Парсим URL и извлекаем данные
+	// Parse URL and extract data
 	parsedURL, err := url.Parse(webAppURL)
 	if err != nil {
-		return "", fmt.Errorf("парсинг URL: %w", err)
+		return "", fmt.Errorf("URL parsing: %w", err)
 	}
 
-	// Проверяем обычные параметры запроса
+	// Check regular query parameters
 	queryParams := parsedURL.Query()
 
-	// 1. Проверяем прямые токены в параметрах
+	// 1. Check direct tokens in parameters
 	tokenParams := []string{"token", "auth_token", "bearer", "access_token", "jwt"}
 	for _, param := range tokenParams {
 		if token := queryParams.Get(param); token != "" {
-			log.Printf("✅ Найден токен в параметре %s", param)
+			log.Printf("✅ Found token in parameter %s", param)
 			return token, nil
 		}
 	}
 
-	// 2. Проверяем токен в hash части URL (после #)
+	// 2. Check token in hash part of URL (after #)
 	if fragment := parsedURL.Fragment; fragment != "" {
 		if token := extractTokenFromFragment(fragment); token != "" {
-			log.Printf("✅ Найден токен во fragment")
+			log.Printf("✅ Found token in fragment")
 			return token, nil
 		}
 	}
 
-	// 3. Извлекаем tgWebAppData/initData из URL
+	// 3. Extract tgWebAppData/initData from URL
 	initData := queryParams.Get("tgWebAppData")
 	if initData == "" {
 		initData = queryParams.Get("initData")
 	}
 
 	if initData != "" {
-		log.Printf("🔍 Найден initData, отправляем на API для получения токена")
+		log.Printf("🔍 Found initData, sending to API for token")
 		return w.requestTokenWithInitData(initData)
 	}
 
-	// 4. Если это прямая ссылка на Web App, пробуем загрузить её
+	// 4. If this is direct Web App link, try to load it
 	if strings.Contains(webAppURL, "tgWebAppData=") || strings.Contains(webAppURL, "initData=") {
 		return w.extractInitDataFromURL(webAppURL)
 	}
 
-	// 5. Последняя попытка - запрос к API приложения
+	// 5. Last attempt - request to application API
 	return w.requestTokenFromWebAppAPI(webAppURL)
 }
 
-// extractInitDataFromURL извлекает initData из URL
+// extractInitDataFromURL extracts initData from URL
 func (w *WebAppService) extractInitDataFromURL(webAppURL string) (string, error) {
-	// Ищем tgWebAppData или initData в URL
+	// Search for tgWebAppData or initData in URL
 	re := regexp.MustCompile(`(?:tgWebAppData|initData)=([^&\s#]+)`)
 	matches := re.FindStringSubmatch(webAppURL)
 
 	if len(matches) < 2 {
-		return "", fmt.Errorf("initData не найден в URL")
+		return "", fmt.Errorf("initData not found in URL")
 	}
 
 	initData, err := url.QueryUnescape(matches[1])
 	if err != nil {
-		return "", fmt.Errorf("ошибка декодирования initData: %w", err)
+		return "", fmt.Errorf("initData decoding error: %w", err)
 	}
 
-	log.Printf("🔍 Извлечен initData: %s...", initData[:min(50, len(initData))])
+	log.Printf("🔍 Extracted initData: %s...", initData[:min(50, len(initData))])
 
 	return w.requestTokenWithInitData(initData)
 }
 
-// requestTokenWithInitData отправляет initData на API для получения токена
+// requestTokenWithInitData sends initData to API to get token
 func (w *WebAppService) requestTokenWithInitData(initData string) (string, error) {
-	// Здесь должен быть HTTP запрос к вашему API
-	// который принимает initData и возвращает Bearer токен
+	// Here should be HTTP request to your API
+	// which accepts initData and returns Bearer token
 
-	log.Printf("📤 Отправка initData на API приложения")
+	log.Printf("📤 Sending initData to application API")
 
-	/* Пример реализации:
+	/* Example implementation:
 
 	import "encoding/json"
 	import "net/http"
@@ -274,46 +274,46 @@ func (w *WebAppService) requestTokenWithInitData(initData string) (string, error
 	resp, err := http.Post("https://your-api.com/auth/telegram-webapp",
 		"application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", fmt.Errorf("запрос к API: %w", err)
+		return "", fmt.Errorf("API request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var tokenResp TokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", fmt.Errorf("декодирование ответа: %w", err)
+		return "", fmt.Errorf("response decoding: %w", err)
 	}
 
 	if tokenResp.Error != "" {
-		return "", fmt.Errorf("ошибка API: %s", tokenResp.Error)
+		return "", fmt.Errorf("API error: %s", tokenResp.Error)
 	}
 
 	return tokenResp.Token, nil
 	*/
 
-	// Для демонстрации - создаем токен на основе initData
-	// В реальности здесь должен быть вызов вашего API!
+	// For demonstration - create token based on initData
+	// In reality, there should be a call to your API!
 	token := fmt.Sprintf("demo_token_%x", initData[:min(8, len(initData))])
-	log.Printf("⚠️  ДЕМО: Создан тестовый токен: %s", maskToken(token))
-	log.Printf("⚠️  ВНИМАНИЕ: Реализуйте requestTokenWithInitData для вашего API!")
+	log.Printf("⚠️  DEMO: Created test token: %s", maskToken(token))
+	log.Printf("⚠️  WARNING: Implement requestTokenWithInitData for your API!")
 
 	return token, nil
 }
 
-// requestTokenFromWebAppAPI делает дополнительный запрос к API приложения
+// requestTokenFromWebAppAPI makes additional request to application API
 func (w *WebAppService) requestTokenFromWebAppAPI(webAppURL string) (string, error) {
-	// Эта функция вызывается если не найден initData
-	// Можете реализовать альтернативную логику получения токена
+	// This function is called if initData is not found
+	// You can implement alternative token retrieval logic
 
-	log.Printf("⚠️  Web App URL не содержит initData или прямого токена: %s", webAppURL)
-	log.Printf("⚠️  Попробуйте:")
-	log.Printf("    1. Проверить правильность bot_username")
-	log.Printf("    2. Убедиться что бот имеет Web App")
-	log.Printf("    3. Проверить web_app_url в конфигурации")
+	log.Printf("⚠️  Web App URL doesn't contain initData or direct token: %s", webAppURL)
+	log.Printf("⚠️  Try:")
+	log.Printf("    1. Check bot_username correctness")
+	log.Printf("    2. Make sure bot has Web App")
+	log.Printf("    3. Check web_app_url in configuration")
 
-	return "", fmt.Errorf("не удалось извлечь токен из Web App URL")
+	return "", fmt.Errorf("failed to extract token from Web App URL")
 }
 
-// min возвращает минимальное значение
+// min returns minimum value
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -321,9 +321,9 @@ func min(a, b int) int {
 	return b
 }
 
-// extractTokenFromFragment извлекает токен из fragment части URL
+// extractTokenFromFragment extracts token from URL fragment part
 func extractTokenFromFragment(fragment string) string {
-	// Парсим fragment как query string
+	// Parse fragment as query string
 	values, err := url.ParseQuery(fragment)
 	if err != nil {
 		return ""
@@ -339,14 +339,14 @@ func extractTokenFromFragment(fragment string) string {
 	return ""
 }
 
-// extractTokenFromMessage извлекает токен из текста сообщения
+// extractTokenFromMessage extracts token from message text
 func extractTokenFromMessage(message string) string {
-	// Регулярные выражения для поиска токенов
+	// Regular expressions for token search
 	tokenPatterns := []string{
 		`(?i)token[:\s]+([A-Za-z0-9_\-\.]+)`,
 		`(?i)bearer[:\s]+([A-Za-z0-9_\-\.]+)`,
 		`(?i)auth[:\s]+([A-Za-z0-9_\-\.]+)`,
-		`([A-Za-z0-9_\-\.]{32,})`, // Длинные строки (возможные токены)
+		`([A-Za-z0-9_\-\.]{32,})`, // Long strings (possible tokens)
 	}
 
 	for _, pattern := range tokenPatterns {
@@ -360,7 +360,7 @@ func extractTokenFromMessage(message string) string {
 	return ""
 }
 
-// maskToken маскирует токен для безопасного логирования
+// maskToken masks token for safe logging
 func maskToken(token string) string {
 	if len(token) <= 8 {
 		return strings.Repeat("*", len(token))
@@ -368,14 +368,14 @@ func maskToken(token string) string {
 	return token[:4] + strings.Repeat("*", len(token)-8) + token[len(token)-4:]
 }
 
-// GetAuthData получает auth data из Telegram Web App (аналог Python функции)
+// GetAuthData gets auth data from Telegram Web App (analog of Python function)
 func (w *WebAppService) GetAuthData(ctx context.Context, botTag, webAppURL string) (*client.TelegramAuthResponse, error) {
-	log.Printf("🔍 Получение auth data для бота: %s", botTag)
+	log.Printf("🔍 Getting auth data for bot: %s", botTag)
 
-	// 1. Находим бота
+	// 1. Find bot
 	bot, err := w.findBotByTag(ctx, botTag)
 	if err != nil {
-		log.Printf("❌ Ошибка поиска бота: %v", err)
+		log.Printf("❌ Bot search error: %v", err)
 		return &client.TelegramAuthResponse{
 			Status:      "ERROR",
 			Description: "Bot not found",
@@ -383,10 +383,10 @@ func (w *WebAppService) GetAuthData(ctx context.Context, botTag, webAppURL strin
 		}, err
 	}
 
-	// 2. Запрашиваем Web App
+	// 2. Request Web App
 	webAppData, err := w.requestWebAppData(ctx, bot, webAppURL)
 	if err != nil {
-		log.Printf("❌ Ошибка получения Web App данных: %v", err)
+		log.Printf("❌ Error getting Web App data: %v", err)
 		return &client.TelegramAuthResponse{
 			Status:      "ERROR",
 			Description: "Failed to get Web App data",
@@ -394,7 +394,7 @@ func (w *WebAppService) GetAuthData(ctx context.Context, botTag, webAppURL strin
 		}, err
 	}
 
-	log.Printf("✅ Auth data получен успешно")
+	log.Printf("✅ Auth data obtained successfully")
 	return &client.TelegramAuthResponse{
 		Status:      "SUCCESS",
 		Description: "OK",
@@ -402,101 +402,101 @@ func (w *WebAppService) GetAuthData(ctx context.Context, botTag, webAppURL strin
 	}, nil
 }
 
-// findBotByTag находит бота по tag (аналог resolve_peer)
+// findBotByTag finds bot by tag (analog of resolve_peer)
 func (w *WebAppService) findBotByTag(ctx context.Context, botTag string) (*tg.User, error) {
-	// Убираем @ если есть
+	// Remove @ if present
 	botUsername := strings.TrimPrefix(botTag, "@")
 
-	// Резолвим username бота
+	// Resolve bot username
 	resolved, err := w.api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
 		Username: botUsername,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("резолв username %s: %w", botUsername, err)
+		return nil, fmt.Errorf("username resolution %s: %w", botUsername, err)
 	}
 
-	// Ищем пользователя-бота
+	// Search for bot user
 	for _, user := range resolved.Users {
 		if u, ok := user.(*tg.User); ok && u.Bot {
 			return u, nil
 		}
 	}
 
-	return nil, fmt.Errorf("бот %s не найден", botTag)
+	return nil, fmt.Errorf("bot %s not found", botTag)
 }
 
-// requestWebAppData запрашивает Web App данные (аналог RequestWebView)
+// requestWebAppData requests Web App data (analog of RequestWebView)
 func (w *WebAppService) requestWebAppData(ctx context.Context, bot *tg.User, webAppURL string) (*client.AuthData, error) {
-	// Создаем input peer для бота
+	// Create input peer for bot
 	inputPeer := &tg.InputPeerUser{
 		UserID:     bot.ID,
 		AccessHash: bot.AccessHash,
 	}
 
-	// Создаем input user для бота
+	// Create input user for bot
 	inputUser := &tg.InputUser{
 		UserID:     bot.ID,
 		AccessHash: bot.AccessHash,
 	}
 
-	// Запрашиваем Web App (аналог RequestWebView из Python)
+	// Request Web App (analog of RequestWebView from Python)
 	webView, err := w.api.MessagesRequestWebView(ctx, &tg.MessagesRequestWebViewRequest{
 		Peer:        inputPeer,
 		Bot:         inputUser,
 		URL:         webAppURL,
-		Platform:    "android", // как в Python коде
-		FromBotMenu: false,     // как в Python коде
+		Platform:    "android", // as in Python code
+		FromBotMenu: false,     // as in Python code
 	})
 	if err != nil {
-		return nil, fmt.Errorf("запрос Web App: %w", err)
+		return nil, fmt.Errorf("Web App request: %w", err)
 	}
 
-	log.Printf("🔗 Получен Web App URL: %s", webView.URL)
+	log.Printf("🔗 Received Web App URL: %s", webView.URL)
 
-	// Извлекаем tgWebAppData из URL (как в Python)
+	// Extract tgWebAppData from URL (as in Python)
 	authDataString, err := w.extractTgWebAppData(webView.URL)
 	if err != nil {
-		return nil, fmt.Errorf("извлечение tgWebAppData: %w", err)
+		return nil, fmt.Errorf("tgWebAppData extraction: %w", err)
 	}
 
-	// Создаем AuthData с временем истечения 45 минут (как в Python)
+	// Create AuthData with 45 minutes expiration (as in Python)
 	expTime := time.Now().Add(45 * time.Minute)
 	authData := client.NewAuthData(authDataString, expTime)
 
-	log.Printf("📋 Auth data извлечен, истекает: %s", expTime.Format("15:04:05"))
+	log.Printf("📋 Auth data extracted, expires: %s", expTime.Format("15:04:05"))
 
 	return authData, nil
 }
 
-// extractTgWebAppData извлекает и декодирует tgWebAppData (аналог Python unquote)
+// extractTgWebAppData extracts and decodes tgWebAppData (analog of Python unquote)
 func (w *WebAppService) extractTgWebAppData(webAppURL string) (string, error) {
-	// Ищем tgWebAppData в URL
+	// Search for tgWebAppData in URL
 	if !strings.Contains(webAppURL, "tgWebAppData=") {
-		return "", fmt.Errorf("tgWebAppData не найден в URL")
+		return "", fmt.Errorf("tgWebAppData not found in URL")
 	}
 
-	// Разделяем URL и извлекаем часть с tgWebAppData
+	// Split URL and extract part with tgWebAppData
 	parts := strings.Split(webAppURL, "tgWebAppData=")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("некорректный формат URL")
+		return "", fmt.Errorf("incorrect URL format")
 	}
 
-	// Извлекаем данные до следующего параметра
+	// Extract data until next parameter
 	tgWebAppData := strings.Split(parts[1], "&tgWebAppVersion")[0]
 
-	// Декодируем URL (аналог Python unquote)
+	// Decode URL (analog of Python unquote)
 	decoded1, err := url.QueryUnescape(tgWebAppData)
 	if err != nil {
-		return "", fmt.Errorf("первое декодирование: %w", err)
+		return "", fmt.Errorf("first decoding: %w", err)
 	}
 
-	// Второе декодирование (как в Python - двойной unquote)
+	// Second decoding (as in Python - double unquote)
 	decoded2, err := url.QueryUnescape(decoded1)
 	if err != nil {
-		return "", fmt.Errorf("второе декодирование: %w", err)
+		return "", fmt.Errorf("second decoding: %w", err)
 	}
 
-	log.Printf("🔓 Декодированные auth data: %s...", decoded2[:min(50, len(decoded2))])
+	log.Printf("🔓 Decoded auth data: %s...", decoded2[:min(50, len(decoded2))])
 
 	return decoded2, nil
 }

@@ -13,7 +13,7 @@ import (
 	"stickersbot/internal/telegram"
 )
 
-// TokenInfo информация о токене с кешированием
+// TokenInfo token information with caching
 type TokenInfo struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
@@ -21,37 +21,37 @@ type TokenInfo struct {
 	LastCheck time.Time `json:"last_check"`
 }
 
-// TokenManager управляет Bearer токенами аккаунтов с кешированием
+// TokenManager manages Bearer tokens for accounts with caching
 type TokenManager struct {
 	config      *config.Config
 	httpClient  *client.HTTPClient
-	tokens      map[string]*TokenInfo // ключ - имя аккаунта
+	tokens      map[string]*TokenInfo // key - account name
 	mutex       sync.RWMutex
 	authService *AuthIntegration
 
-	// Настройки кеширования
-	tokenTTL      time.Duration // Время жизни токена (по умолчанию 40 минут)
-	checkCooldown time.Duration // Минимальный интервал между проверками (по умолчанию 1 минута)
+	// Cache settings
+	tokenTTL      time.Duration // Token lifetime (default 40 minutes)
+	checkCooldown time.Duration // Minimum interval between checks (default 1 minute)
 }
 
-// NewTokenManager создает новый менеджер токенов
+// NewTokenManager creates a new token manager
 func NewTokenManager(cfg *config.Config) *TokenManager {
 	return &TokenManager{
 		config:        cfg,
 		httpClient:    client.New(),
 		tokens:        make(map[string]*TokenInfo),
 		authService:   NewAuthIntegration(cfg),
-		tokenTTL:      40 * time.Minute, // Токены живут ~45 минут, обновляем за 5 минут до истечения
-		checkCooldown: 1 * time.Minute,  // Не проверяем чаще раза в минуту
+		tokenTTL:      40 * time.Minute, // Tokens live ~45 minutes, refresh 5 minutes before expiration
+		checkCooldown: 1 * time.Minute,  // Don't check more often than once per minute
 	}
 }
 
-// GetCachedToken возвращает кешированный токен без проверки API
+// GetCachedToken returns cached token without API check
 func (tm *TokenManager) GetCachedToken(accountName string) (string, error) {
 	tm.mutex.RLock()
 	defer tm.mutex.RUnlock()
 
-	// Находим аккаунт в конфигурации
+	// Find account in configuration
 	var account *config.Account
 	for _, acc := range tm.config.Accounts {
 		if acc.Name == accountName {
@@ -61,20 +61,20 @@ func (tm *TokenManager) GetCachedToken(accountName string) (string, error) {
 	}
 
 	if account == nil {
-		return "", fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
+		return "", fmt.Errorf("account %s not found", accountName)
 	}
 
-	// Проверяем кешированный токен
+	// Check cached token
 	if tokenInfo, exists := tm.tokens[accountName]; exists {
-		// Если токен еще не истек по нашему TTL, возвращаем его
+		// If token hasn't expired according to our TTL, return it
 		if time.Now().Before(tokenInfo.ExpiresAt) {
 			return tokenInfo.Token, nil
 		}
 	}
 
-	// Если кеша нет или токен истек, возвращаем токен из конфигурации
+	// If no cache or token expired, return token from configuration
 	if account.AuthToken != "" {
-		// Обновляем кеш с текущим токеном
+		// Update cache with current token
 		tm.tokens[accountName] = &TokenInfo{
 			Token:     account.AuthToken,
 			ExpiresAt: time.Now().Add(tm.tokenTTL),
@@ -84,31 +84,31 @@ func (tm *TokenManager) GetCachedToken(accountName string) (string, error) {
 		return account.AuthToken, nil
 	}
 
-	return "", fmt.Errorf("токен\ для\ аккаунта\ %s\ отсутствует", accountName)
+	return "", fmt.Errorf("token for account %s is missing", accountName)
 }
 
-// RefreshTokenOnError обновляет токен только при получении ошибки авторизации
+// RefreshTokenOnError refreshes token only when receiving authorization error
 func (tm *TokenManager) RefreshTokenOnError(accountName string, statusCode int) (string, error) {
 	tm.mutex.Lock()
 	defer tm.mutex.Unlock()
 
-	log.Printf("🔄 Обновление токена для %s из-за ошибки %d", accountName, statusCode)
+	log.Printf("🔄 Refreshing token for %s due to error %d", accountName, statusCode)
 
-	// Проверяем cooldown - не обновляем слишком часто, НО игнорируем cooldown для критических ошибок токена
-	isTokenError := statusCode == 401 || statusCode == 403 || statusCode == 200 // 200 может содержать JSON ошибку токена
+	// Check cooldown - don't update too often, BUT ignore cooldown for critical token errors
+	isTokenError := statusCode == 401 || statusCode == 403 || statusCode == 200 // 200 may contain JSON token error
 	if tokenInfo, exists := tm.tokens[accountName]; exists && !isTokenError {
 		if time.Since(tokenInfo.LastCheck) < tm.checkCooldown {
-			log.Printf("⏳ Слишком частое обновление токена для %s, используем кешированный", accountName)
+			log.Printf("⏳ Token refresh too frequent for %s, using cached", accountName)
 			return tokenInfo.Token, nil
 		}
 	}
 
-	// Для ошибок токена всегда пытаемся обновить
+	// For token errors, always try to refresh
 	if isTokenError {
-		log.Printf("🔑 Критическая ошибка токена для %s (статус %d), принудительное обновление", accountName, statusCode)
+		log.Printf("🔑 Critical token error for %s (status %d), forced refresh", accountName, statusCode)
 	}
 
-	// Находим аккаунт в конфигурации
+	// Find account in configuration
 	var account *config.Account
 	var accountIndex int
 	for i, acc := range tm.config.Accounts {
@@ -120,51 +120,51 @@ func (tm *TokenManager) RefreshTokenOnError(accountName string, statusCode int) 
 	}
 
 	if account == nil {
-		return "", fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
+		return "", fmt.Errorf("account %s not found", accountName)
 	}
 
-	// Обновляем токен через Telegram авторизацию
-	log.Printf("🔄 Запуск Telegram авторизации для %s...", accountName)
+	// Refresh token through Telegram authentication
+	log.Printf("🔄 Starting Telegram authentication for %s...", accountName)
 	newToken, err := tm.refreshTokenViaTelegram(account)
 	if err != nil {
-		log.Printf("❌ Ошибка обновления токена для %s: %v", accountName, err)
-		// Возвращаем старый токен если обновление не удалось
+		log.Printf("❌ Error refreshing token for %s: %v", accountName, err)
+		// Return old token if refresh failed
 		if account.AuthToken != "" {
-			log.Printf("🔄 Используем старый токен для %s", accountName)
+			log.Printf("🔄 Using old token for %s", accountName)
 			return account.AuthToken, nil
 		}
-		return "", fmt.Errorf("ошибка обновления токена для %s: %v", accountName, err)
+		return "", fmt.Errorf("error refreshing token for %s: %v", accountName, err)
 	}
 
 	tokenPreview := newToken
 	if len(tokenPreview) > 20 {
 		tokenPreview = tokenPreview[:20] + "..."
 	}
-	log.Printf("✅ Получен новый токен для %s: %s", accountName, tokenPreview)
+	log.Printf("✅ Received new token for %s: %s", accountName, tokenPreview)
 
-	// Проверяем, отличается ли новый токен от старого
+	// Check if new token is different from old one
 	if account.AuthToken == newToken {
-		log.Printf("⚠️ Новый токен для %s идентичен старому! Возможна проблема с авторизацией", accountName)
+		log.Printf("⚠️ New token for %s is identical to old one! Possible authentication issue", accountName)
 	}
 
-	// Проверяем, не является ли токен временным/невалидным (только для явно временных токенов)
+	// Check if token is temporary/invalid (only for explicitly temporary tokens)
 	if strings.Contains(newToken, "INVALID_TEMP_TOKEN") {
-		log.Printf("❌ Получен временный/невалидный токен для %s: %s", accountName, tokenPreview)
-		log.Printf("❌ Этот токен НЕ БУДЕТ работать с API!")
-		return "", fmt.Errorf("получен невалидный временный токен для %s", accountName)
+		log.Printf("❌ Received temporary/invalid token for %s: %s", accountName, tokenPreview)
+		log.Printf("❌ This token will NOT work with API!")
+		return "", fmt.Errorf("received invalid temporary token for %s", accountName)
 	}
 
-	// Сохраняем новый токен в конфигурацию
+	// Save new token to configuration
 	tm.config.Accounts[accountIndex].AuthToken = newToken
 
-	// Сохраняем конфигурацию в фоне (не блокируем основной поток)
+	// Save configuration in background (don't block main thread)
 	go func() {
 		if err := tm.config.Save("config.json"); err != nil {
-			log.Printf("⚠️ Не удалось сохранить конфигурацию: %v", err)
+			log.Printf("⚠️ Failed to save configuration: %v", err)
 		}
 	}()
 
-	// Обновляем кеш
+	// Update cache
 	tm.tokens[accountName] = &TokenInfo{
 		Token:     newToken,
 		ExpiresAt: time.Now().Add(tm.tokenTTL),
@@ -172,24 +172,24 @@ func (tm *TokenManager) RefreshTokenOnError(accountName string, statusCode int) 
 		LastCheck: time.Now(),
 	}
 
-	log.Printf("✅ Токен для аккаунта %s успешно обновлен", accountName)
+	log.Printf("✅ Token for account %s successfully updated", accountName)
 	return newToken, nil
 }
 
-// refreshTokenViaTelegram обновляет токен через Telegram авторизацию
+// refreshTokenViaTelegram refreshes token through Telegram authentication
 func (tm *TokenManager) refreshTokenViaTelegram(account *config.Account) (string, error) {
 	if account.PhoneNumber == "" {
-		return "", fmt.Errorf("номер телефона не указан для аккаунта %s", account.Name)
+		return "", fmt.Errorf("phone number not specified for account %s", account.Name)
 	}
 
-	// Определяем путь к файлу сессии
+	// Determine session file path
 	sessionFile := account.SessionFile
 	if sessionFile == "" {
 		cleanPhone := strings.ReplaceAll(account.PhoneNumber, "+", "")
 		sessionFile = fmt.Sprintf("sessions/%s.session", cleanPhone)
 	}
 
-	// Создаем сервис авторизации
+	// Create authentication service
 	authService := telegram.NewAuthService(
 		tm.config.APIId,
 		tm.config.APIHash,
@@ -200,52 +200,52 @@ func (tm *TokenManager) refreshTokenViaTelegram(account *config.Account) (string
 		tm.config.TokenAPIURL,
 	)
 
-	// Выполняем авторизацию с таймаутом
+	// Execute authentication with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	bearerToken, err := authService.AuthorizeAndGetToken(ctx)
 	if err != nil {
-		return "", fmt.Errorf("ошибка Telegram авторизации: %v", err)
+		return "", fmt.Errorf("Telegram authentication error: %v", err)
 	}
 
 	return bearerToken, nil
 }
 
-// PreventiveRefresh превентивно обновляет токены которые скоро истекут
+// PreventiveRefresh proactively refreshes tokens that are about to expire
 func (tm *TokenManager) PreventiveRefresh() {
 	tm.mutex.Lock()
 	defer tm.mutex.Unlock()
 
-	log.Printf("🔄 Превентивное обновление токенов...")
+	log.Printf("🔄 Proactively refreshing tokens...")
 
 	for accountName, tokenInfo := range tm.tokens {
-		// Обновляем токены которые истекут в ближайшие 5 минут
+		// Refresh tokens that will expire in the next 5 minutes
 		if time.Until(tokenInfo.ExpiresAt) < 5*time.Minute {
-			log.Printf("⏰ Токен для %s скоро истечет, обновляем превентивно", accountName)
+			log.Printf("⏰ Token for %s is about to expire, refreshing proactively", accountName)
 
-			// Запускаем обновление в отдельной горутине чтобы не блокировать
+			// Start refresh in separate goroutine to not block
 			go func(name string) {
-				_, err := tm.RefreshTokenOnError(name, 401) // Принудительное обновление
+				_, err := tm.RefreshTokenOnError(name, 401) // Forced refresh
 				if err != nil {
-					log.Printf("❌ Ошибка превентивного обновления токена для %s: %v", name, err)
+					log.Printf("❌ Error proactively refreshing token for %s: %v", name, err)
 				}
 			}(accountName)
 		}
 	}
 }
 
-// GetValidToken возвращает действительный токен (основной метод для использования)
+// GetValidToken returns valid token (main method for use)
 func (tm *TokenManager) GetValidToken(accountName string) (string, error) {
 	return tm.GetCachedToken(accountName)
 }
 
-// InitializeTokens инициализирует кеш токенов из конфигурации
+// InitializeTokens initializes token cache from configuration
 func (tm *TokenManager) InitializeTokens() {
 	tm.mutex.Lock()
 	defer tm.mutex.Unlock()
 
-	log.Printf("🔧 Инициализация кеша токенов...")
+	log.Printf("🔧 Initializing token cache...")
 
 	for _, account := range tm.config.Accounts {
 		if account.AuthToken != "" {
@@ -255,25 +255,25 @@ func (tm *TokenManager) InitializeTokens() {
 				IsValid:   true,
 				LastCheck: time.Now(),
 			}
-			log.Printf("📋 Токен для %s добавлен в кеш", account.Name)
+			log.Printf("📋 Token for %s added to cache", account.Name)
 		}
 	}
 }
 
-// RefreshTokenOnJSONError обновляет токен при получении JSON ошибки токена
+// RefreshTokenOnJSONError refreshes token when receiving JSON token error
 func (tm *TokenManager) RefreshTokenOnJSONError(accountName string) (string, error) {
-	log.Printf("🔑 Обновление токена для %s из-за JSON ошибки токена", accountName)
-	return tm.RefreshTokenOnError(accountName, 200) // Используем статус 200 для JSON ошибок
+	log.Printf("🔑 Refreshing token for %s due to JSON token error", accountName)
+	return tm.RefreshTokenOnError(accountName, 200) // Use status 200 for JSON errors
 }
 
-// ForceRefreshToken принудительно обновляет токен (игнорируя кеш и cooldown)
+// ForceRefreshToken forcibly refreshes token (ignoring cache and cooldown)
 func (tm *TokenManager) ForceRefreshToken(accountName string) (string, error) {
 	tm.mutex.Lock()
 	defer tm.mutex.Unlock()
 
-	log.Printf("🔄 Принудительное обновление токена для %s", accountName)
+	log.Printf("🔄 Forcibly refreshing token for %s", accountName)
 
-	// Находим аккаунт в конфигурации
+	// Find account in configuration
 	var account *config.Account
 	var accountIndex int
 	for i, acc := range tm.config.Accounts {
@@ -285,25 +285,25 @@ func (tm *TokenManager) ForceRefreshToken(accountName string) (string, error) {
 	}
 
 	if account == nil {
-		return "", fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
+		return "", fmt.Errorf("account %s not found", accountName)
 	}
 
-	// Обновляем токен через Telegram авторизацию
+	// Refresh token through Telegram authentication
 	newToken, err := tm.refreshTokenViaTelegram(account)
 	if err != nil {
-		log.Printf("❌ Ошибка принудительного обновления токена для %s: %v", accountName, err)
-		return "", fmt.Errorf("ошибка обновления токена для %s: %v", accountName, err)
+		log.Printf("❌ Error forcibly refreshing token for %s: %v", accountName, err)
+		return "", fmt.Errorf("error refreshing token for %s: %v", accountName, err)
 	}
 
-	// Сохраняем новый токен в конфигурацию
+	// Save new token to configuration
 	tm.config.Accounts[accountIndex].AuthToken = newToken
 
-	// Сохраняем конфигурацию
+	// Save configuration
 	if err := tm.config.Save("config.json"); err != nil {
-		log.Printf("⚠️ Не удалось сохранить конфигурацию: %v", err)
+		log.Printf("⚠️ Failed to save configuration: %v", err)
 	}
 
-	// Обновляем кеш
+	// Update cache
 	tm.tokens[accountName] = &TokenInfo{
 		Token:     newToken,
 		ExpiresAt: time.Now().Add(tm.tokenTTL),
@@ -311,25 +311,25 @@ func (tm *TokenManager) ForceRefreshToken(accountName string) (string, error) {
 		LastCheck: time.Now(),
 	}
 
-	log.Printf("✅ Токен для аккаунта %s принудительно обновлен", accountName)
+	log.Printf("✅ Token for account %s forcibly updated", accountName)
 	return newToken, nil
 }
 
-// InvalidateTokenCache очищает кеш токена для аккаунта
+// InvalidateTokenCache clears token cache for account
 func (tm *TokenManager) InvalidateTokenCache(accountName string) {
 	tm.mutex.Lock()
 	defer tm.mutex.Unlock()
 
 	delete(tm.tokens, accountName)
-	log.Printf("🗑️ Кеш токена для %s очищен", accountName)
+	log.Printf("🗑️ Token cache for %s cleared", accountName)
 }
 
-// ReloadTokenFromConfig перезагружает токен из конфигурации
+// ReloadTokenFromConfig reloads token from configuration
 func (tm *TokenManager) ReloadTokenFromConfig(accountName string) error {
 	tm.mutex.Lock()
 	defer tm.mutex.Unlock()
 
-	// Находим аккаунт в конфигурации
+	// Find account in configuration
 	var account *config.Account
 	for _, acc := range tm.config.Accounts {
 		if acc.Name == accountName {
@@ -339,14 +339,14 @@ func (tm *TokenManager) ReloadTokenFromConfig(accountName string) error {
 	}
 
 	if account == nil {
-		return fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
+		return fmt.Errorf("account %s not found", accountName)
 	}
 
 	if account.AuthToken == "" {
-		return fmt.Errorf("токен для аккаунта %s отсутствует в конфигурации", accountName)
+		return fmt.Errorf("token for account %s is missing in configuration", accountName)
 	}
 
-	// Обновляем кеш с токеном из конфигурации
+	// Update cache with token from configuration
 	tm.tokens[accountName] = &TokenInfo{
 		Token:     account.AuthToken,
 		ExpiresAt: time.Now().Add(tm.tokenTTL),
@@ -354,6 +354,6 @@ func (tm *TokenManager) ReloadTokenFromConfig(accountName string) error {
 		LastCheck: time.Now(),
 	}
 
-	log.Printf("🔄 Токен для %s перезагружен из конфигурации", accountName)
+	log.Printf("🔄 Token for %s reloaded from configuration", accountName)
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// FoundCollection структура для сохранения найденной коллекции
+// FoundCollection structure for saving found collection
 type FoundCollection struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
@@ -20,25 +20,25 @@ type FoundCollection struct {
 	AccountName string    `json:"account_name"`
 }
 
-// CollectionLogger логгер для сохранения найденных коллекций
+// CollectionLogger logger for saving found collections
 type CollectionLogger struct {
 	filename string
 	mutex    sync.Mutex
 }
 
-// NewCollectionLogger создает новый логгер коллекций
+// NewCollectionLogger creates a new collection logger
 func NewCollectionLogger(filename string) *CollectionLogger {
 	return &CollectionLogger{
 		filename: filename,
 	}
 }
 
-// LogFoundCollection сохраняет найденную коллекцию в файл
+// LogFoundCollection saves found collection to file
 func (cl *CollectionLogger) LogFoundCollection(collection Collection, character Character, accountName string) error {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 
-	// Конвертируем цену из нанотонов в TON
+	// Convert price from nanotons to TON
 	priceTON := float64(character.Price) / 1000000000.0
 
 	foundCollection := FoundCollection{
@@ -52,29 +52,29 @@ func (cl *CollectionLogger) LogFoundCollection(collection Collection, character 
 		AccountName: accountName,
 	}
 
-	// Читаем существующие данные
+	// Read existing data
 	var collections []FoundCollection
 	if data, err := os.ReadFile(cl.filename); err == nil {
 		json.Unmarshal(data, &collections)
 	}
 
-	// Добавляем новую коллекцию
+	// Add new collection
 	collections = append(collections, foundCollection)
 
-	// Сохраняем обратно в файл
+	// Save back to file
 	data, err := json.MarshalIndent(collections, "", "  ")
 	if err != nil {
-		return fmt.Errorf("ошибка сериализации JSON: %v", err)
+		return fmt.Errorf("JSON serialization error: %v", err)
 	}
 
 	if err := os.WriteFile(cl.filename, data, 0644); err != nil {
-		return fmt.Errorf("ошибка записи в файл: %v", err)
+		return fmt.Errorf("file write error: %v", err)
 	}
 
 	return nil
 }
 
-// GetFoundCollections возвращает все найденные коллекции
+// GetFoundCollections returns all found collections
 func (cl *CollectionLogger) GetFoundCollections() ([]FoundCollection, error) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
@@ -83,19 +83,19 @@ func (cl *CollectionLogger) GetFoundCollections() ([]FoundCollection, error) {
 	data, err := os.ReadFile(cl.filename)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return collections, nil // Возвращаем пустой массив если файл не существует
+			return collections, nil // Return empty array if file doesn't exist
 		}
-		return nil, fmt.Errorf("ошибка чтения файла: %v", err)
+		return nil, fmt.Errorf("file read error: %v", err)
 	}
 
 	if err := json.Unmarshal(data, &collections); err != nil {
-		return nil, fmt.Errorf("ошибка парсинга JSON: %v", err)
+		return nil, fmt.Errorf("JSON parsing error: %v", err)
 	}
 
 	return collections, nil
 }
 
-// GetCollectionCount возвращает количество найденных коллекций
+// GetCollectionCount returns the number of found collections
 func (cl *CollectionLogger) GetCollectionCount() int {
 	collections, err := cl.GetFoundCollections()
 	if err != nil {

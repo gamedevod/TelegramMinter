@@ -44,12 +44,12 @@ type BuyerService struct {
 	tokenManager *TokenManager
 }
 
-// NewBuyerService создает новый сервис покупки
+// NewBuyerService creates a new purchase service
 func NewBuyerService(cfg *config.Config) *BuyerService {
-	// Создаем файл для логирования транзакций
+	// Create file for transaction logging
 	logFile, err := os.OpenFile("transactions.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		fmt.Printf("⚠️ Не удалось создать файл логов транзакций: %v\n", err)
+		fmt.Printf("⚠️ Failed to create transaction log file: %v\n", err)
 		logFile = nil
 	}
 
@@ -63,17 +63,17 @@ func NewBuyerService(cfg *config.Config) *BuyerService {
 	}
 }
 
-// Start запускает процесс покупки стикеров
+// Start launches the sticker purchase process
 func (bs *BuyerService) Start() error {
 	bs.mu.Lock()
 	defer bs.mu.Unlock()
 
 	if bs.isRunning {
-		return fmt.Errorf("сервис\ уже\ запущен")
+		return fmt.Errorf("service is already running")
 	}
 
 	if !bs.config.IsValid() {
-		return fmt.Errorf("неверная конфигурация: проверьте аккаунты")
+		return fmt.Errorf("invalid configuration: check accounts")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -100,70 +100,70 @@ func (bs *BuyerService) Start() error {
 		}
 	}()
 
-	// Инициализируем статистику
+	// Initialize statistics
 	bs.statistics = &types.Statistics{
 		StartTime: time.Now(),
 	}
 
-	bs.logChan <- "🚀 Запуск покупки стикеров..."
-	bs.logChan <- fmt.Sprintf("📊 Аккаунтов: %d", len(bs.config.Accounts))
+	bs.logChan <- "🚀 Starting sticker purchase..."
+	bs.logChan <- fmt.Sprintf("📊 Accounts: %d", len(bs.config.Accounts))
 
-	// Инициализируем токены из конфигурации
-	bs.logChan <- "🔍 Инициализация токенов авторизации..."
+	// Initialize tokens from configuration
+	bs.logChan <- "🔍 Initializing authorization tokens..."
 
-	// Подсчитываем общее количество потоков
+	// Count total number of threads
 	totalThreads := 0
 	for _, account := range bs.config.Accounts {
 		totalThreads += account.Threads
 	}
-	bs.logChan <- fmt.Sprintf("🔄 Общее количество потоков: %d", totalThreads)
+	bs.logChan <- fmt.Sprintf("🔄 Total number of threads: %d", totalThreads)
 
 	if bs.config.TestMode {
-		bs.logChan <- fmt.Sprintf("🧪 ТЕСТОВЫЙ РЕЖИМ: платежи будут отправляться на %s", bs.config.TestAddress)
+		bs.logChan <- fmt.Sprintf("🧪 TEST MODE: payments will be sent to %s", bs.config.TestAddress)
 	} else {
-		bs.logChan <- "⚠️ БОЕВОЙ РЕЖИМ: платежи будут отправляться на адреса из API"
+		bs.logChan <- "⚠️ PRODUCTION MODE: payments will be sent to addresses from API"
 	}
 
-	// Запускаем воркеры для каждого аккаунта
+	// Launch workers for each account
 	var wg sync.WaitGroup
 	workerCounter := 0
 
 	for accountIndex, account := range bs.config.Accounts {
-		bs.logChan <- fmt.Sprintf("🎯 Аккаунт '%s': Коллекция: %d, Персонаж: %d, Валюта: %s, Количество: %d, Потоков: %d",
+		bs.logChan <- fmt.Sprintf("🎯 Account '%s': Collection: %d, Character: %d, Currency: %s, Amount: %d, Threads: %d",
 			account.Name, account.Collection, account.Character, account.Currency, account.Count, account.Threads)
 
 		if account.SeedPhrase != "" {
-			bs.logChan <- fmt.Sprintf("🔐 Аккаунт '%s': TON кошелек настроен", account.Name)
+			bs.logChan <- fmt.Sprintf("🔐 Account '%s': TON wallet configured", account.Name)
 		} else {
-			bs.logChan <- fmt.Sprintf("⚠️ Аккаунт '%s': TON кошелек НЕ настроен", account.Name)
+			bs.logChan <- fmt.Sprintf("⚠️ Account '%s': TON wallet NOT configured", account.Name)
 		}
 
-		// Проверяем, нужно ли запустить снайп монитор для этого аккаунта
+		// Check if snipe monitor needs to be launched for this account
 		if account.SnipeMonitor != nil && account.SnipeMonitor.Enabled {
-			bs.logChan <- fmt.Sprintf("🎯 Аккаунт '%s': Запуск снайп монитора", account.Name)
+			bs.logChan <- fmt.Sprintf("🎯 Account '%s': Launching snipe monitor", account.Name)
 
-			// Создаем callback функцию для покупки
+			// Create purchase callback function
 			purchaseCallback := bs.createPurchaseCallback(&account)
 
-			// Создаем callback для получения токена
+			// Create token retrieval callback
 			tokenCallback := func(accountName string) (string, error) {
 				return bs.tokenManager.GetValidToken(accountName)
 			}
 
-			// Создаем callback для обновления токена
+			// Create token refresh callback
 			tokenRefreshCallback := func(accountName string, statusCode int) (string, error) {
 				return bs.tokenManager.RefreshTokenOnError(accountName, statusCode)
 			}
 
-			// Создаем и запускаем снайп монитор
+			// Create and launch snipe monitor
 			snipeMonitor := monitor.NewSnipeMonitor(&account, client.New(), purchaseCallback, tokenCallback, tokenRefreshCallback)
 			bs.snipeMonitors = append(bs.snipeMonitors, snipeMonitor)
 
 			if err := snipeMonitor.Start(); err != nil {
-				bs.logChan <- fmt.Sprintf("❌ Ошибка запуска снайп монитора для аккаунта '%s': %v", account.Name, err)
+				bs.logChan <- fmt.Sprintf("❌ Error launching snipe monitor for account '%s': %v", account.Name, err)
 			}
 		} else {
-			// Запускаем обычные потоки для этого аккаунта
+			// Launch regular threads for this account
 			for i := 0; i < account.Threads; i++ {
 				wg.Add(1)
 				workerCounter++
@@ -183,77 +183,77 @@ func (bs *BuyerService) Start() error {
 		}
 	}
 
-	// Запускаем горутину для обновления статистики
+	// Launch goroutine for statistics update
 	go bs.updateStatistics(ctx)
 
-	// Ждем завершения в отдельной горутине
+	// Wait for completion in separate goroutine
 	go func() {
 		wg.Wait()
 		bs.mu.Lock()
 		bs.isRunning = false
 		bs.mu.Unlock()
-		bs.logChan <- "✅ Все потоки завершены"
+		bs.logChan <- "✅ All threads completed"
 	}()
 
 	return nil
 }
 
-// accountWorker выполняет покупки для конкретного аккаунта
+// accountWorker executes purchases for a specific account
 func (bs *BuyerService) accountWorker(ctx context.Context, wg *sync.WaitGroup, worker *AccountWorker, accountNum int) {
 	defer wg.Done()
 
-	bs.logChan <- fmt.Sprintf("🔄 Поток %d запущен для аккаунта %d '%s'", worker.workerID, accountNum, worker.account.Name)
+	bs.logChan <- fmt.Sprintf("🔄 Thread %d started for account %d '%s'", worker.workerID, accountNum, worker.account.Name)
 
 	for {
 		select {
 		case <-ctx.Done():
-			bs.logChan <- fmt.Sprintf("🛑 Поток %d остановлен", worker.workerID)
+			bs.logChan <- fmt.Sprintf("🛑 Thread %d stopped", worker.workerID)
 			return
 		default:
-			// Проверяем, активен ли аккаунт
+			// Check if account is active
 			worker.mu.RLock()
 			isActive := worker.isActive
 			worker.mu.RUnlock()
 
 			if !isActive {
-				bs.logChan <- fmt.Sprintf("🛑 Поток %d неактивен (достигнут лимит транзакций)", worker.workerID)
+				bs.logChan <- fmt.Sprintf("🛑 Thread %d inactive (reached transaction limit)", worker.workerID)
 				return
 			}
 
 			bs.performAccountBuy(worker, accountNum)
-			time.Sleep(100 * time.Millisecond) // Небольшая задержка между запросами
+			time.Sleep(100 * time.Millisecond) // Small delay between requests
 		}
 	}
 }
 
-// performAccountBuy выполняет покупку для конкретного аккаунта
+// performAccountBuy executes purchase for a specific account
 func (bs *BuyerService) performAccountBuy(worker *AccountWorker, accountNum int) {
-	// Получаем кешированный токен (без API проверки)
+	// Get cached token (without API check)
 	bearerToken, err := bs.tokenManager.GetValidToken(worker.account.Name)
 	if err != nil {
 		bs.mu.Lock()
 		bs.statistics.FailedRequests++
 		bs.mu.Unlock()
-		bs.logChan <- fmt.Sprintf("❌ Поток %d (Аккаунт %d '%s'): Ошибка получения токена: %v",
+		bs.logChan <- fmt.Sprintf("❌ Thread %d (Account %d '%s'): Token retrieval error: %v",
 			worker.workerID, accountNum, worker.account.Name, err)
 		return
 	}
 
-	// Выполняем запрос на покупку
+	// Execute purchase request
 	resp, err := bs.makeOrderRequest(worker.account, bearerToken)
 	if err != nil {
 		bs.mu.Lock()
 		bs.statistics.FailedRequests++
 		bs.mu.Unlock()
-		bs.logChan <- fmt.Sprintf("❌ Поток %d (Аккаунт %d '%s'): Ошибка запроса: %v",
+		bs.logChan <- fmt.Sprintf("❌ Thread %d (Account %d '%s'): Request error: %v",
 			worker.workerID, accountNum, worker.account.Name, err)
 		return
 	}
 
-	// Проверяем статус ответа
+	// Check response status
 	if resp.StatusCode == 401 || resp.StatusCode == 403 {
-		// Токен истек, пытаемся обновить и повторить запрос
-		bs.logChan <- fmt.Sprintf("🔄 Поток %d (Аккаунт %d '%s'): Токен истек (статус %d), обновляем...",
+		// Token expired, try to refresh and retry request
+		bs.logChan <- fmt.Sprintf("🔄 Thread %d (Account %d '%s'): Token expired (status %d), refreshing...",
 			worker.workerID, accountNum, worker.account.Name, resp.StatusCode)
 
 		newToken, err := bs.tokenManager.RefreshTokenOnError(worker.account.Name, resp.StatusCode)
@@ -261,27 +261,27 @@ func (bs *BuyerService) performAccountBuy(worker *AccountWorker, accountNum int)
 			bs.mu.Lock()
 			bs.statistics.FailedRequests++
 			bs.mu.Unlock()
-			bs.logChan <- fmt.Sprintf("❌ Поток %d (Аккаунт %d '%s'): Ошибка обновления токена: %v",
+			bs.logChan <- fmt.Sprintf("❌ Thread %d (Account %d '%s'): Token refresh error: %v",
 				worker.workerID, accountNum, worker.account.Name, err)
 			return
 		}
 
-		// Повторяем запрос с новым токеном
+		// Retry request with new token
 		resp2, err := bs.makeOrderRequest(worker.account, newToken)
 		if err != nil {
 			bs.mu.Lock()
 			bs.statistics.FailedRequests++
 			bs.mu.Unlock()
-			bs.logChan <- fmt.Sprintf("❌ Поток %d (Аккаунт %d '%s'): Ошибка повторного запроса: %v",
+			bs.logChan <- fmt.Sprintf("❌ Thread %d (Account %d '%s'): Retry request error: %v",
 				worker.workerID, accountNum, worker.account.Name, err)
 			return
 		}
-		resp = resp2 // Используем новый ответ
+		resp = resp2 // Use new response
 	}
 
-	// Логируем ответ сервера
-	bs.logChan <- fmt.Sprintf("📡 Поток %d (Аккаунт %d '%s'): Статус %d", worker.workerID, accountNum, worker.account.Name, resp.StatusCode)
-	bs.logChan <- fmt.Sprintf("📄 Поток %d (Аккаунт %d '%s'): Ответ - %s", worker.workerID, accountNum, worker.account.Name, resp.Body)
+	// Log server response
+	bs.logChan <- fmt.Sprintf("📡 Thread %d (Account %d '%s'): Status %d", worker.workerID, accountNum, worker.account.Name, resp.StatusCode)
+	bs.logChan <- fmt.Sprintf("📄 Thread %d (Account %d '%s'): Response - %s", worker.workerID, accountNum, worker.account.Name, resp.Body)
 
 	if resp.IsTokenError {
 		bs.mu.Lock()
@@ -289,25 +289,25 @@ func (bs *BuyerService) performAccountBuy(worker *AccountWorker, accountNum int)
 		bs.statistics.InvalidTokens++
 		bs.mu.Unlock()
 
-		bs.logChan <- fmt.Sprintf("🔑 Поток %d (Аккаунт %d '%s'): Неверный токен авторизации! Попытка обновления...", worker.workerID, accountNum, worker.account.Name)
+		bs.logChan <- fmt.Sprintf("🔑 Thread %d (Account %d '%s'): Invalid authorization token! Refresh attempt...", worker.workerID, accountNum, worker.account.Name)
 
-		// Пытаемся обновить токен
+		// Try to refresh token
 		newToken, err := bs.tokenManager.RefreshTokenOnError(worker.account.Name, resp.StatusCode)
 		if err != nil {
-			bs.logChan <- fmt.Sprintf("❌ Поток %d (Аккаунт %d '%s'): Не удалось обновить токен: %v", worker.workerID, accountNum, worker.account.Name, err)
+			bs.logChan <- fmt.Sprintf("❌ Thread %d (Account %d '%s'): Token refresh error: %v", worker.workerID, accountNum, worker.account.Name, err)
 			return
 		}
 
-		bs.logChan <- fmt.Sprintf("✅ Поток %d (Аккаунт %d '%s'): Токен успешно обновлен, повторяем запрос...", worker.workerID, accountNum, worker.account.Name)
+		bs.logChan <- fmt.Sprintf("✅ Thread %d (Account %d '%s'): Token refreshed successfully, retrying request...", worker.workerID, accountNum, worker.account.Name)
 
 		resp2, err := bs.makeOrderRequest(worker.account, newToken)
 		if err != nil {
-			bs.logChan <- fmt.Sprintf("❌ Поток %d (Аккаунт %d '%s'): Ошибка повторного запроса с новым токеном: %v", worker.workerID, accountNum, worker.account.Name, err)
+			bs.logChan <- fmt.Sprintf("❌ Thread %d (Account %d '%s'): Retry request error with new token: %v", worker.workerID, accountNum, worker.account.Name, err)
 			return
 		}
 
-		resp = resp2 // Используем новый ответ
-		bs.logChan <- fmt.Sprintf("🔄 Поток %d (Аккаунт %d '%s'): Повторный запрос выполнен", worker.workerID, accountNum, worker.account.Name)
+		resp = resp2 // Use new response
+		bs.logChan <- fmt.Sprintf("🔄 Thread %d (Account %d '%s'): Retry request completed", worker.workerID, accountNum, worker.account.Name)
 	}
 
 	if !resp.Success {
@@ -315,44 +315,44 @@ func (bs *BuyerService) performAccountBuy(worker *AccountWorker, accountNum int)
 		bs.statistics.FailedRequests++
 		bs.mu.Unlock()
 
-		bs.logChan <- fmt.Sprintf("⚠️ Поток %d (Аккаунт %d '%s'): Неуспешный запрос (статус %d)", worker.workerID, accountNum, worker.account.Name, resp.StatusCode)
+		bs.logChan <- fmt.Sprintf("⚠️ Thread %d (Account %d '%s'): Unsuccessful request (status %d)", worker.workerID, accountNum, worker.account.Name, resp.StatusCode)
 	} else {
-		// Успешный запрос
+		// Successful request
 		bs.mu.Lock()
 		bs.statistics.SuccessRequests++
 		bs.mu.Unlock()
 
-		// Обрабатываем транзакцию если она была отправлена
+		// Process transaction if it was sent
 		if resp.TransactionSent && resp.TransactionResult != nil {
-			// Обновляем глобальную статистику
+			// Update global statistics
 			bs.mu.Lock()
 			bs.statistics.SentTransactions++
 			bs.mu.Unlock()
 
-			// Обновляем счетчик транзакций для аккаунта
+			// Update transaction counter for account
 			worker.mu.Lock()
 			worker.transactionCount++
 			currentCount := worker.transactionCount
 
-			// Проверяем, достиг ли аккаунт лимита транзакций
+			// Check if account reached transaction limit
 			if worker.account.MaxTransactions > 0 && currentCount >= worker.account.MaxTransactions {
 				worker.isActive = false
-				bs.logChan <- fmt.Sprintf("🛑 Аккаунт %d '%s' достиг лимита транзакций (%d/%d) и будет остановлен",
+				bs.logChan <- fmt.Sprintf("🛑 Account %d '%s' reached transaction limit (%d/%d) and will be stopped",
 					accountNum, worker.account.Name, currentCount, worker.account.MaxTransactions)
 			}
 			worker.mu.Unlock()
 
-			// Логируем информацию о транзакции
+			// Log transaction information
 			txResult := resp.TransactionResult
-			bs.logChan <- fmt.Sprintf("💰 Поток %d (Аккаунт %d '%s'): Транзакция отправлена!", worker.workerID, accountNum, worker.account.Name)
-			bs.logChan <- fmt.Sprintf("   📤 С адреса: %s", txResult.FromAddress)
-			bs.logChan <- fmt.Sprintf("   📥 На адрес: %s", txResult.ToAddress)
-			bs.logChan <- fmt.Sprintf("   💰 Сумма: %.9f TON", float64(txResult.Amount)/1000000000)
+			bs.logChan <- fmt.Sprintf("💰 Thread %d (Account %d '%s'): Transaction sent!", worker.workerID, accountNum, worker.account.Name)
+			bs.logChan <- fmt.Sprintf("   📤 From address: %s", txResult.FromAddress)
+			bs.logChan <- fmt.Sprintf("   📥 To address: %s", txResult.ToAddress)
+			bs.logChan <- fmt.Sprintf("   💰 Amount: %.9f TON", float64(txResult.Amount)/1000000000)
 			bs.logChan <- fmt.Sprintf("   🔗 Order ID: %s", resp.OrderID)
 			bs.logChan <- fmt.Sprintf("   🆔 Transaction ID: %s", txResult.TransactionID)
-			bs.logChan <- fmt.Sprintf("   📊 Транзакций аккаунта: %d/%d", currentCount, worker.account.MaxTransactions)
+			bs.logChan <- fmt.Sprintf("   📊 Account transaction count: %d/%d", currentCount, worker.account.MaxTransactions)
 
-			// Записываем в файл логов
+			// Log transaction to file
 			txLog := &types.TransactionLog{
 				Timestamp:     time.Now(),
 				AccountName:   worker.account.Name,
@@ -366,17 +366,17 @@ func (bs *BuyerService) performAccountBuy(worker *AccountWorker, accountNum int)
 			}
 			bs.logTransaction(txLog)
 		} else if resp.OrderID != "" {
-			// Была попытка отправить транзакцию, но она не удалась
-			bs.logChan <- fmt.Sprintf("✅ Поток %d (Аккаунт %d '%s'): Успешная покупка! OrderID: %s, но транзакция НЕ отправлена",
+			// Transaction attempt was made but failed
+			bs.logChan <- fmt.Sprintf("✅ Thread %d (Account %d '%s'): Successful purchase! OrderID: %s, but transaction NOT sent",
 				worker.workerID, accountNum, worker.account.Name, resp.OrderID)
 		} else {
-			// Обычный успешный запрос без TON
-			bs.logChan <- fmt.Sprintf("✅ Поток %d (Аккаунт %d '%s'): Успешный запрос!", worker.workerID, accountNum, worker.account.Name)
+			// Regular successful request without TON
+			bs.logChan <- fmt.Sprintf("✅ Thread %d (Account %d '%s'): Successful request!", worker.workerID, accountNum, worker.account.Name)
 		}
 	}
 }
 
-// Stop останавливает процесс покупки
+// Stop stops the purchase process
 func (bs *BuyerService) Stop() {
 	bs.mu.Lock()
 	defer bs.mu.Unlock()
@@ -389,34 +389,34 @@ func (bs *BuyerService) Stop() {
 		bs.cancel()
 	}
 
-	// Останавливаем все снайп мониторы
+	// Stop all snipe monitors
 	for _, monitor := range bs.snipeMonitors {
 		monitor.Stop()
 	}
 	bs.snipeMonitors = nil
 
-	// Закрываем файл логов транзакций
+	// Close transaction log file
 	if bs.transactionLog != nil {
 		bs.transactionLog.Close()
 		bs.transactionLog = nil
 	}
 
-	bs.logChan <- "🛑 Остановка покупки стикеров..."
+	bs.logChan <- "🛑 Stopping sticker purchase..."
 }
 
-// IsRunning возвращает статус работы сервиса
+// IsRunning returns the service status
 func (bs *BuyerService) IsRunning() bool {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
 	return bs.isRunning
 }
 
-// GetStatistics возвращает текущую статистику
+// GetStatistics returns current statistics
 func (bs *BuyerService) GetStatistics() *types.Statistics {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
 
-	// Создаем копию статистики
+	// Create copy of statistics
 	stats := *bs.statistics
 	if bs.isRunning {
 		stats.Duration = time.Since(stats.StartTime)
@@ -427,12 +427,12 @@ func (bs *BuyerService) GetStatistics() *types.Statistics {
 	return &stats
 }
 
-// GetLogChannel возвращает канал для получения логов
+// GetLogChannel returns channel for receiving logs
 func (bs *BuyerService) GetLogChannel() <-chan string {
 	return bs.logChan
 }
 
-// updateStatistics обновляет статистику каждую секунду
+// updateStatistics updates statistics every second
 func (bs *BuyerService) updateStatistics(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
@@ -443,7 +443,7 @@ func (bs *BuyerService) updateStatistics(ctx context.Context) {
 			return
 		case <-ticker.C:
 			stats := bs.GetStatistics()
-			bs.logChan <- fmt.Sprintf("📈 Всего: %d | Успешно: %d | Ошибок: %d | InvalidTokens: %d | TON отправлено: %d | RPS: %.1f | Время: %s",
+			bs.logChan <- fmt.Sprintf("📈 Total: %d | Successful: %d | Failed: %d | InvalidTokens: %d | TON sent: %d | RPS: %.1f | Time: %s",
 				stats.TotalRequests,
 				stats.SuccessRequests,
 				stats.FailedRequests,
@@ -456,49 +456,49 @@ func (bs *BuyerService) updateStatistics(ctx context.Context) {
 	}
 }
 
-// logTransaction записывает информацию о транзакции в файл
+// logTransaction logs transaction information to file
 func (bs *BuyerService) logTransaction(txLog *types.TransactionLog) {
 	if bs.transactionLog == nil {
 		return
 	}
 
-	// Преобразуем в JSON
+	// Convert to JSON
 	data, err := json.Marshal(txLog)
 	if err != nil {
-		bs.logChan <- fmt.Sprintf("❌ Ошибка записи лога транзакции: %v", err)
+		bs.logChan <- fmt.Sprintf("❌ Transaction log error: %v", err)
 		return
 	}
 
-	// Записываем в файл
+	// Log to file
 	_, err = bs.transactionLog.WriteString(string(data) + "\n")
 	if err != nil {
-		bs.logChan <- fmt.Sprintf("❌ Ошибка записи в файл лога: %v", err)
+		bs.logChan <- fmt.Sprintf("❌ Transaction log write error: %v", err)
 		return
 	}
 
-	// Сразу сохраняем на диск
+	// Immediately save to disk
 	bs.transactionLog.Sync()
 }
 
-// createPurchaseCallback создает callback функцию для покупки стикеров
+// createPurchaseCallback creates callback function for purchasing stickers
 func (bs *BuyerService) createPurchaseCallback(account *config.Account) monitor.PurchaseCallback {
 	return func(request monitor.PurchaseRequest) error {
-		bs.logChan <- fmt.Sprintf("🚀 Снайп покупка: %s (Коллекция: %d, Персонаж: %d, Цена: %d)",
+		bs.logChan <- fmt.Sprintf("🚀 Snipe purchase: %s (Collection: %d, Character: %d, Price: %d)",
 			request.Name, request.CollectionID, request.CharacterID, request.Price)
 
 		return bs.performSnipePurchase(account.Name, request.CollectionID, request.CharacterID)
 	}
 }
 
-// performSnipePurchase выполняет покупку через snipe monitor
+// performSnipePurchase executes purchase through snipe monitor
 func (bs *BuyerService) performSnipePurchase(accountName string, collectionID int, characterID int) error {
-	// Получаем кешированный токен (без API проверки)
+	// Get cached token (without API check)
 	bearerToken, err := bs.tokenManager.GetValidToken(accountName)
 	if err != nil {
-		return fmt.Errorf("ошибка получения токена: %v", err)
+		return fmt.Errorf("token retrieval error: %v", err)
 	}
 
-	// Находим аккаунт в конфигурации
+	// Find account in configuration
 	var account *config.Account
 	for _, acc := range bs.config.Accounts {
 		if acc.Name == accountName {
@@ -507,36 +507,36 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 		}
 	}
 	if account == nil {
-		return fmt.Errorf("аккаунт\ %s\ не\ найден", accountName)
+		return fmt.Errorf("account %s not found", accountName)
 	}
 
-	// Выполняем запрос на покупку
+	// Execute purchase request
 	resp, err := bs.makeSnipeOrderRequest(*account, bearerToken, collectionID, characterID)
 	if err != nil {
-		return fmt.Errorf("ошибка запроса: %v", err)
+		return fmt.Errorf("request error: %v", err)
 	}
 
-	// Проверяем статус ответа
+	// Check response status
 	if resp.StatusCode == 401 || resp.StatusCode == 403 {
-		// Токен истек, пытаемся обновить и повторить запрос
-		bs.logChan <- fmt.Sprintf("🔄 [%s] Токен истек при snipe (статус %d), обновляем...", accountName, resp.StatusCode)
+		// Token expired, try to refresh and retry request
+		bs.logChan <- fmt.Sprintf("🔄 [%s] Token expired at snipe (status %d), refreshing...", accountName, resp.StatusCode)
 
 		newToken, err := bs.tokenManager.RefreshTokenOnError(accountName, resp.StatusCode)
 		if err != nil {
-			return fmt.Errorf("ошибка обновления токена: %v", err)
+			return fmt.Errorf("token refresh error: %v", err)
 		}
 
-		// Повторяем запрос с новым токеном
+		// Retry request with new token
 		resp2, err := bs.makeSnipeOrderRequest(*account, newToken, collectionID, characterID)
 		if err != nil {
-			return fmt.Errorf("ошибка повторного запроса: %v", err)
+			return fmt.Errorf("retry request error: %v", err)
 		}
-		resp = resp2 // Используем новый ответ
+		resp = resp2 // Use new response
 	}
 
-	// Логируем ответ сервера
-	bs.logChan <- fmt.Sprintf("📡 Снайп '%s': Статус %d", account.Name, resp.StatusCode)
-	bs.logChan <- fmt.Sprintf("📄 Снайп '%s': Ответ - %s", account.Name, resp.Body)
+	// Log server response
+	bs.logChan <- fmt.Sprintf("📡 Snipe '%s': Status %d", account.Name, resp.StatusCode)
+	bs.logChan <- fmt.Sprintf("📄 Snipe '%s': Response - %s", account.Name, resp.Body)
 
 	if resp.IsTokenError {
 		bs.mu.Lock()
@@ -544,26 +544,26 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 		bs.statistics.InvalidTokens++
 		bs.mu.Unlock()
 
-		bs.logChan <- fmt.Sprintf("🔑 Снайп '%s': Неверный токен авторизации! Попытка обновления...", account.Name)
+		bs.logChan <- fmt.Sprintf("🔑 Snipe '%s': Invalid authorization token! Refresh attempt...", account.Name)
 
-		// Пытаемся обновить токен
+		// Try to refresh token
 		newToken, err := bs.tokenManager.RefreshTokenOnError(account.Name, resp.StatusCode)
 		if err != nil {
-			bs.logChan <- fmt.Sprintf("❌ Снайп '%s': Не удалось обновить токен: %v", account.Name, err)
+			bs.logChan <- fmt.Sprintf("❌ Snipe '%s': Token refresh error: %v", account.Name, err)
 			return nil
 		}
 
-		bs.logChan <- fmt.Sprintf("✅ Снайп '%s': Токен успешно обновлен, повторяем запрос...", account.Name)
+		bs.logChan <- fmt.Sprintf("✅ Snipe '%s': Token refreshed successfully, retrying request...", account.Name)
 
-		// Повторяем запрос с новым токеном
+		// Retry request with new token
 		resp2, err := bs.makeSnipeOrderRequest(*account, newToken, collectionID, characterID)
 		if err != nil {
-			bs.logChan <- fmt.Sprintf("❌ Снайп '%s': Ошибка повторного запроса с новым токеном: %v", account.Name, err)
+			bs.logChan <- fmt.Sprintf("❌ Snipe '%s': Retry request error with new token: %v", account.Name, err)
 			return nil
 		}
 
-		resp = resp2 // Используем новый ответ
-		bs.logChan <- fmt.Sprintf("🔄 Снайп '%s': Повторный запрос выполнен", account.Name)
+		resp = resp2 // Use new response
+		bs.logChan <- fmt.Sprintf("🔄 Snipe '%s': Retry request completed", account.Name)
 	}
 
 	if !resp.Success {
@@ -571,32 +571,32 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 		bs.statistics.FailedRequests++
 		bs.mu.Unlock()
 
-		bs.logChan <- fmt.Sprintf("⚠️ Снайп '%s': Неуспешный запрос (статус %d)", account.Name, resp.StatusCode)
+		bs.logChan <- fmt.Sprintf("⚠️ Snipe '%s': Unsuccessful request (status %d)", account.Name, resp.StatusCode)
 		return nil
 	}
 
-	// Успешный запрос
+	// Successful request
 	bs.mu.Lock()
 	bs.statistics.SuccessRequests++
 	bs.mu.Unlock()
 
-	// Обрабатываем транзакцию если она была отправлена
+	// Process transaction if it was sent
 	if resp.TransactionSent && resp.TransactionResult != nil {
-		// Обновляем глобальную статистику
+		// Update global statistics
 		bs.mu.Lock()
 		bs.statistics.SentTransactions++
 		bs.mu.Unlock()
 
-		// Логируем информацию о транзакции
+		// Log transaction information
 		txResult := resp.TransactionResult
-		bs.logChan <- fmt.Sprintf("💰 Снайп '%s': Транзакция отправлена!", account.Name)
-		bs.logChan <- fmt.Sprintf("   📤 С адреса: %s", txResult.FromAddress)
-		bs.logChan <- fmt.Sprintf("   📥 На адрес: %s", txResult.ToAddress)
-		bs.logChan <- fmt.Sprintf("   💰 Сумма: %.9f TON", float64(txResult.Amount)/1000000000)
+		bs.logChan <- fmt.Sprintf("💰 Snipe '%s': Transaction sent!", account.Name)
+		bs.logChan <- fmt.Sprintf("   📤 From address: %s", txResult.FromAddress)
+		bs.logChan <- fmt.Sprintf("   📥 To address: %s", txResult.ToAddress)
+		bs.logChan <- fmt.Sprintf("   💰 Amount: %.9f TON", float64(txResult.Amount)/1000000000)
 		bs.logChan <- fmt.Sprintf("   🔗 Order ID: %s", resp.OrderID)
 		bs.logChan <- fmt.Sprintf("   🆔 Transaction ID: %s", txResult.TransactionID)
 
-		// Записываем в файл логов
+		// Log transaction to file
 		txLog := &types.TransactionLog{
 			Timestamp:     time.Now(),
 			AccountName:   account.Name,
@@ -614,7 +614,7 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 	return nil
 }
 
-// makeOrderRequest выполняет HTTP запрос на покупку
+// makeOrderRequest executes HTTP request for purchasing
 func (bs *BuyerService) makeOrderRequest(account config.Account, bearerToken string) (*client.BuyStickersResponse, error) {
 	bs.mu.Lock()
 	bs.statistics.TotalRequests++
@@ -622,9 +622,9 @@ func (bs *BuyerService) makeOrderRequest(account config.Account, bearerToken str
 
 	httpClient := client.New()
 
-	// Проверяем, есть ли seed фраза для отправки транзакций
+	// Check if seed phrase exists for sending transactions
 	if account.SeedPhrase != "" {
-		// Используем новый метод с отправкой TON транзакции
+		// Use new method with TON transaction sending
 		return httpClient.BuyStickersAndPay(
 			bearerToken,
 			account.Collection,
@@ -636,7 +636,7 @@ func (bs *BuyerService) makeOrderRequest(account config.Account, bearerToken str
 			bs.config.TestAddress,
 		)
 	} else {
-		// Используем обычный метод без отправки транзакций
+		// Use regular method without sending transactions
 		return httpClient.BuyStickers(
 			bearerToken,
 			account.Collection,
@@ -647,7 +647,7 @@ func (bs *BuyerService) makeOrderRequest(account config.Account, bearerToken str
 	}
 }
 
-// makeSnipeOrderRequest выполняет HTTP запрос на покупку через snipe monitor
+// makeSnipeOrderRequest executes HTTP request for purchasing through snipe monitor
 func (bs *BuyerService) makeSnipeOrderRequest(account config.Account, bearerToken string, collectionID int, characterID int) (*client.BuyStickersResponse, error) {
 	bs.mu.Lock()
 	bs.statistics.TotalRequests++
@@ -655,9 +655,9 @@ func (bs *BuyerService) makeSnipeOrderRequest(account config.Account, bearerToke
 
 	httpClient := client.New()
 
-	// Проверяем, есть ли seed фраза для отправки транзакций
+	// Check if seed phrase exists for sending transactions
 	if account.SeedPhrase != "" {
-		// Используем новый метод с отправкой TON транзакции
+		// Use new method with TON transaction sending
 		return httpClient.BuyStickersAndPay(
 			bearerToken,
 			collectionID,
@@ -669,7 +669,7 @@ func (bs *BuyerService) makeSnipeOrderRequest(account config.Account, bearerToke
 			bs.config.TestAddress,
 		)
 	} else {
-		// Используем обычный метод без отправки транзакций
+		// Use regular method without sending transactions
 		return httpClient.BuyStickers(
 			bearerToken,
 			collectionID,
