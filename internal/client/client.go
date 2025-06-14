@@ -23,6 +23,12 @@ type APIResponse struct {
 	} `json:"data"`
 }
 
+// APIErrorResponse структура для ошибочного ответа от API
+type APIErrorResponse struct {
+	OK        bool   `json:"ok"`
+	ErrorCode string `json:"errorCode"`
+}
+
 // HTTPClient обертка для tls-client
 type HTTPClient struct {
 	client tls_client.HttpClient
@@ -148,9 +154,19 @@ func (c *HTTPClient) BuyStickers(authToken string, collection, character int, cu
 	success := resp.StatusCode >= 200 && resp.StatusCode < 300
 
 	// Проверяем на ошибку токена
-	isTokenError := strings.Contains(bodyStr, "invalid_auth_token") ||
-		strings.Contains(bodyStr, "unauthorized") ||
-		resp.StatusCode == 401
+	isTokenError := resp.StatusCode == 401 || resp.StatusCode == 403 ||
+		strings.Contains(bodyStr, "invalid_auth_token") ||
+		strings.Contains(bodyStr, "unauthorized")
+
+	// Дополнительная проверка через JSON парсинг
+	if !isTokenError {
+		var errorResp APIErrorResponse
+		if err := json.Unmarshal(body, &errorResp); err == nil {
+			if !errorResp.OK && errorResp.ErrorCode == "invalid_auth_token" {
+				isTokenError = true
+			}
+		}
+	}
 
 	result := &BuyStickersResponse{
 		StatusCode:   resp.StatusCode,

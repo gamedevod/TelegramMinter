@@ -9,23 +9,40 @@
   "proxy_url": "",
   "test_mode": true,
   "test_address": "UQD06XNOAQw5ZYSINOfzuMLTQnBO8SX4ae05XqMmS9ikjP4N",
-  "api_id": 25164991,
-  "api_hash": "96d62a73e5087e4bbfbbe6b5dc58042c",
+  "api_id": ,
+  "api_hash": "",
   "bot_username": "sticker_bot",
   "web_app_url": "https://stickerdom.store",
   "token_api_url": "https://api.stickerdom.store/api/v1",
   "accounts": [
     {
       "name": "Account 1 - Telegram Auth",
-      "auth_token": ".kwRKVRv39td-XGeEsA7H8JxFkD-QMmXHigxWIqsfoHY",
-      "phone_number": "+",
-      "seed_phrase": "",
+      "auth_token": "tlcmRvbS5zdG9yZSJdLCJleHAiOjE3NDk4OTgzOTgsIm5iZiI6MTc0OTg5NDc5OCwiaWF0IjoxNzQ5ODk0Nzk4LCJqdGkiOiJiMDEyYWRkNy03YWVkLTQ3NGItOTVmOS0yN2RiNmE0NDkxYjkifQ.Kgc3ZnXa5UNyZVNIA49fRKj87-XiwBTcVikuUB00x5o",
+      "phone_number": "+380669730125",
+      "seed_phrase": " ",
       "threads": 1,
-      "collection": 4,
-      "character": 15,
+      "collection": 1,
+      "character": 70,
       "currency": "TON",
       "count": 1,
-      "max_transactions": 1
+      "max_transactions": 1,
+      "snipe_monitor": {
+        "enabled": true,
+        "supply_range": {
+          "min": 10,
+          "max": 5000
+        },
+        "price_range": {
+          "min": 1,
+          "max": 10000000000
+        },
+        "word_filter": [
+          "azuki",
+          "smeshariki",
+          "ric flair",
+          "pokemon"
+        ]
+      }
     }
   ]
 }

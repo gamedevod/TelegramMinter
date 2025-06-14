@@ -170,17 +170,22 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 	log.Printf("🔧 Используем бота: %s, Web App: %s", botUsername, webAppURL)
 
 	// 1. Получаем auth data (аналог get_auth_data из Python)
+	log.Printf("🔄 Получение auth data для бота %s...", botUsername)
 	webAppService := NewWebAppService(api, botUsername, webAppURL)
 	authResponse, err := webAppService.GetAuthData(ctx, botUsername, webAppURL)
 	if err != nil {
-		log.Printf("⚠️  Ошибка получения auth data: %v", err)
+		log.Printf("❌ Ошибка получения auth data: %v", err)
+		log.Printf("🔄 Переход к fallback токену...")
 		return a.fallbackToTempToken(user.ID)
 	}
 
 	if authResponse.Status != "SUCCESS" {
-		log.Printf("⚠️  Auth data получить не удалось: %s", authResponse.Description)
+		log.Printf("❌ Auth data получить не удалось: %s", authResponse.Description)
+		log.Printf("🔄 Переход к fallback токену...")
 		return a.fallbackToTempToken(user.ID)
 	}
+
+	log.Printf("✅ Auth data успешно получен")
 
 	authData, ok := authResponse.Data.(*client.AuthData)
 	if !ok {
@@ -206,9 +211,11 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 	httpClient := client.New()
 
 	// Отправляем auth data на API
+	log.Printf("🔄 Отправка auth data на API %s...", apiURL)
 	tokenResponse, err := httpClient.AuthenticateWithTelegramData(apiURL, authData)
 	if err != nil {
-		log.Printf("⚠️  Ошибка авторизации через API: %v", err)
+		log.Printf("❌ Ошибка авторизации через API: %v", err)
+		log.Printf("🔄 Переход к fallback токену...")
 		return a.fallbackToTempToken(user.ID)
 	}
 
@@ -218,7 +225,8 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 		return bearerToken, nil
 	}
 
-	log.Printf("⚠️  API авторизация не удалась: %s", tokenResponse.Description)
+	log.Printf("❌ API авторизация не удалась: %s", tokenResponse.Description)
+	log.Printf("🔄 Переход к fallback токену...")
 	return a.fallbackToTempToken(user.ID)
 }
 
@@ -228,7 +236,9 @@ func (a *AuthService) fallbackToTempToken(userID int64) (string, error) {
 	tempToken := fmt.Sprintf("tg_token_%d_%d", userID, timestamp)
 
 	log.Printf("🎫 Создан временный Bearer токен: %s", maskToken(tempToken))
-	log.Printf("⚠️  ВНИМАНИЕ: Используется временный токен! Настройте правильные bot_username и web_app_url.")
+	log.Printf("⚠️  ВНИМАНИЕ: Используется временный токен!")
+	log.Printf("⚠️  Проверьте настройки: bot_username=%s, web_app_url=%s, token_api_url=%s",
+		a.BotUsername, a.WebAppURL, a.TokenAPIURL)
 
 	return tempToken, nil
 }

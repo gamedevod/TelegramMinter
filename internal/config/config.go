@@ -21,6 +21,23 @@ type Account struct {
 	Currency        string `json:"currency"`
 	Count           int    `json:"count"`
 	MaxTransactions int    `json:"max_transactions"` // Максимальное количество успешных транзакций
+
+	// Настройки снайп монитора
+	SnipeMonitor *SnipeMonitorConfig `json:"snipe_monitor,omitempty"`
+}
+
+// SnipeMonitorConfig настройки снайп монитора
+type SnipeMonitorConfig struct {
+	Enabled     bool     `json:"enabled"`                // Включен ли снайп монитор
+	SupplyRange *Range   `json:"supply_range,omitempty"` // Диапазон количества (supply)
+	PriceRange  *Range   `json:"price_range,omitempty"`  // Диапазон цены (в нанотонах)
+	WordFilter  []string `json:"word_filter,omitempty"`  // Фильтр по словам в названии коллекции
+}
+
+// Range структура для указания диапазона
+type Range struct {
+	Min int `json:"min"` // Минимальное значение
+	Max int `json:"max"` // Максимальное значение
 }
 
 // Config структура конфигурации приложения

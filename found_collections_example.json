@@ -1,0 +1,32 @@
+[
+  {
+    "id": 26,
+    "name": "Pokemon Cards",
+    "character_id": 1,
+    "supply": 3000,
+    "price_ton": 5.0,
+    "price_nano": 5000000000,
+    "found_at": "2024-01-15T14:30:45Z",
+    "account_name": "Account 3 - Snipe Monitor"
+  },
+  {
+    "id": 27,
+    "name": "Azuki Collection",
+    "character_id": 2,
+    "supply": 1500,
+    "price_ton": 8.5,
+    "price_nano": 8500000000,
+    "found_at": "2024-01-15T15:22:10Z",
+    "account_name": "Account 3 - Snipe Monitor"
+  },
+  {
+    "id": 28,
+    "name": "Smeshariki Limited",
+    "character_id": 1,
+    "supply": 2000,
+    "price_ton": 3.2,
+    "price_nano": 3200000000,
+    "found_at": "2024-01-15T16:45:33Z",
+    "account_name": "Account 3 - Snipe Monitor"
+  }
+] 
