@@ -115,6 +115,11 @@ func (s *SnipeMonitor) Stop() {
 	s.cancel()
 }
 
+// GetAccountName returns the account name associated with this snipe monitor
+func (s *SnipeMonitor) GetAccountName() string {
+	return s.config.Name
+}
+
 // initializeState initializes monitor state
 func (s *SnipeMonitor) initializeState() error {
 	// Get valid token

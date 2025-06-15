@@ -42,6 +42,10 @@ type BuyerService struct {
 
 	// Token manager
 	tokenManager *TokenManager
+
+	// Snipe transaction counters per account
+	snipeTransactionCounters map[string]int // Account name -> transaction count
+	snipeCountersMu          sync.RWMutex   // Mutex for snipe counters
 }
 
 // NewBuyerService creates a new purchase service
@@ -54,12 +58,13 @@ func NewBuyerService(cfg *config.Config) *BuyerService {
 	}
 
 	return &BuyerService{
-		client:         client.New(),
-		config:         cfg,
-		statistics:     &types.Statistics{},
-		logChan:        make(chan string, 1000),
-		transactionLog: logFile,
-		tokenManager:   NewTokenManager(cfg),
+		client:                   client.New(),
+		config:                   cfg,
+		statistics:               &types.Statistics{},
+		logChan:                  make(chan string, 1000),
+		transactionLog:           logFile,
+		tokenManager:             NewTokenManager(cfg),
+		snipeTransactionCounters: make(map[string]int),
 	}
 }
 
@@ -490,8 +495,65 @@ func (bs *BuyerService) createPurchaseCallback(account *config.Account) monitor.
 	}
 }
 
+// checkSnipeTransactionLimit проверяет достигнут ли лимит транзакций для снайп аккаунта
+func (bs *BuyerService) checkSnipeTransactionLimit(accountName string) bool {
+	// Find account in configuration
+	var account *config.Account
+	for _, acc := range bs.config.Accounts {
+		if acc.Name == accountName {
+			account = &acc
+			break
+		}
+	}
+	if account == nil {
+		return true // Stop if account not found
+	}
+
+	// If max_transactions is 0, no limit
+	if account.MaxTransactions <= 0 {
+		return false
+	}
+
+	bs.snipeCountersMu.RLock()
+	currentCount := bs.snipeTransactionCounters[accountName]
+	bs.snipeCountersMu.RUnlock()
+
+	return currentCount >= account.MaxTransactions
+}
+
+// incrementSnipeTransactionCounter увеличивает счетчик транзакций для снайп аккаунта
+func (bs *BuyerService) incrementSnipeTransactionCounter(accountName string) (int, bool) {
+	// Find account in configuration
+	var account *config.Account
+	for _, acc := range bs.config.Accounts {
+		if acc.Name == accountName {
+			account = &acc
+			break
+		}
+	}
+	if account == nil {
+		return 0, true // Stop if account not found
+	}
+
+	bs.snipeCountersMu.Lock()
+	bs.snipeTransactionCounters[accountName]++
+	currentCount := bs.snipeTransactionCounters[accountName]
+	bs.snipeCountersMu.Unlock()
+
+	// Check if limit is reached
+	limitReached := account.MaxTransactions > 0 && currentCount >= account.MaxTransactions
+
+	return currentCount, limitReached
+}
+
 // performSnipePurchase executes purchase through snipe monitor
 func (bs *BuyerService) performSnipePurchase(accountName string, collectionID int, characterID int) error {
+	// Check if transaction limit is reached
+	if bs.checkSnipeTransactionLimit(accountName) {
+		bs.logChan <- fmt.Sprintf("🛑 Snipe '%s': Transaction limit reached, skipping purchase", accountName)
+		return fmt.Errorf("transaction limit reached for account %s", accountName)
+	}
+
 	// Get cached token (without API check)
 	bearerToken, err := bs.tokenManager.GetValidToken(accountName)
 	if err != nil {
@@ -587,6 +649,9 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 		bs.statistics.SentTransactions++
 		bs.mu.Unlock()
 
+		// Increment snipe transaction counter
+		currentCount, limitReached := bs.incrementSnipeTransactionCounter(account.Name)
+
 		// Log transaction information
 		txResult := resp.TransactionResult
 		bs.logChan <- fmt.Sprintf("💰 Snipe '%s': Transaction sent!", account.Name)
@@ -595,6 +660,21 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 		bs.logChan <- fmt.Sprintf("   💰 Amount: %.9f TON", float64(txResult.Amount)/1000000000)
 		bs.logChan <- fmt.Sprintf("   🔗 Order ID: %s", resp.OrderID)
 		bs.logChan <- fmt.Sprintf("   🆔 Transaction ID: %s", txResult.TransactionID)
+		bs.logChan <- fmt.Sprintf("   📊 Snipe transaction count: %d/%d", currentCount, account.MaxTransactions)
+
+		// Check if limit is reached
+		if limitReached {
+			bs.logChan <- fmt.Sprintf("🛑 Snipe '%s': Transaction limit reached (%d/%d) - stopping snipe monitor",
+				account.Name, currentCount, account.MaxTransactions)
+
+			// Find and stop the snipe monitor for this account
+			for _, monitor := range bs.snipeMonitors {
+				if monitor.GetAccountName() == account.Name {
+					monitor.Stop()
+					break
+				}
+			}
+		}
 
 		// Log transaction to file
 		txLog := &types.TransactionLog{
