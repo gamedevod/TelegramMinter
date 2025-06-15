@@ -287,6 +287,124 @@ If you want to mint specific collections immediately:
 - **`price_range`** - Price range in nanotons (1 TON = 1000000000 nanotons)
 - **`word_filter`** - List of words to search for in collection names
 
+## 🎮 Application Menu Guide
+
+After launching the program, you will see an interactive CLI menu with 5 main options. Here's a detailed guide for each menu item:
+
+### 🚀 1. Start Task (Purchase/Monitoring)
+
+**What it does:**
+- Starts the main bot functionality
+- Authenticates all configured accounts
+- Begins purchasing or monitoring based on your config
+- Shows real-time logs and statistics
+
+**Step-by-step process:**
+1. **Authentication:** Bot checks all accounts and authenticates those that need it
+2. **Validation:** Verifies wallet balances and configuration
+3. **Start:** Begins the purchasing/monitoring process
+4. **Monitoring:** Shows live logs and statistics in the console
+
+> ⚠️ **Important:** Make sure all accounts are properly configured before starting!
+
+### 🛑 2. Stop Task
+
+**What it does:**
+- Gracefully stops all running tasks
+- Completes current transactions before stopping
+- Shows final statistics
+- Saves all data and logs
+
+**When to use:**
+- When you want to stop the bot temporarily
+- Before changing configuration
+- When you've reached your purchase goals
+- If you notice any issues and want to investigate
+
+### 🔐 3. Manage Account Authentication
+
+**What it does:**
+- Shows authentication status of all accounts
+- Allows selective authentication of specific accounts
+- Displays session files and auth tokens status
+- Provides detailed account information
+
+**Account Status Information:**
+- 🟢 **ACTIVE** - Account has valid auth token or session file
+- 🔴 **INACTIVE** - Account needs authentication
+- ✅ **Auth Token** - Account has valid bearer token
+- 📁 **Session** - Telegram session file exists
+
+**Authentication Options:**
+1. **Selective Authentication:** Choose specific accounts by numbers (e.g., 1,3,5)
+2. **Authenticate All:** Authenticate all inactive accounts at once
+3. **Refresh Status:** Update account status information
+
+> ⚠️ **Note:** Authentication may require phone verification codes for new accounts.
+
+### 💰 4. Show Wallet Balances
+
+**What it does:**
+- Displays TON wallet balances for all accounts
+- Shows wallet addresses
+- Indicates any wallet-related errors
+- Helps verify sufficient funds before purchasing
+
+**Information displayed:**
+- **Account Name:** Your configured account name
+- **Phone Number:** Masked phone number for security
+- **Wallet Address:** TON wallet address
+- **Balance:** Current TON balance
+- **Errors:** Any wallet-related issues
+
+> 💡 **Tip:** Check balances regularly to ensure you have enough TON for purchases!
+
+### 🚪 5. Exit
+
+**What it does:**
+- Safely closes the application
+- Stops all running tasks
+- Saves current state
+- Performs cleanup operations
+
+**Best practices:**
+- Always use this option to exit (don't force close)
+- Wait for tasks to complete before exiting
+- Check final statistics before closing
+
+### 📊 Understanding Status Messages
+
+| Status | Meaning |
+|--------|---------|
+| ⭕ Stopped | No tasks are currently running |
+| 🟢 Running | Bot is actively purchasing/monitoring |
+| 🔄 Authenticating | Account authentication in progress |
+| ✅ Success | Operation completed successfully |
+| ❌ Error | Operation failed - check error message |
+
+### 🔧 Troubleshooting Common Issues
+
+**Account Authentication Problems:**
+- **Session not found:** Use menu option 3 to authenticate
+- **Invalid phone number:** Ensure phone starts with '+' and country code
+- **2FA required:** Add `two_factor_password` to config
+
+**Wallet Issues:**
+- **Insufficient balance:** Add more TON to your wallet
+- **Invalid seed phrase:** Check seed phrase format (12-24 words)
+- **Wallet not found:** Verify seed phrase is correct
+
+**Purchase Problems:**
+- **Collection not found:** Verify collection and character IDs
+- **Price changed:** Collection price may have been updated
+- **Sold out:** Collection may be out of stock
+
+> 💡 **Pro Tips:**
+> - Always test with small amounts first
+> - Keep backup copies of your config file
+> - Monitor logs for any error messages
+> - Use test mode for initial setup
+
 ## 🏃‍♂️ How to Run
 
 ### Windows:

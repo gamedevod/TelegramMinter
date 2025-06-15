@@ -259,6 +259,7 @@
                     <li><a href="#telegram-api-ru">🔑 Получение API ключей Telegram</a></li>
                     <li><a href="#config-ru">⚙️ Настройка конфигурации</a></li>
                     <li><a href="#modes-ru">🎯 Режимы работы</a></li>
+                    <li><a href="#menu-guide-ru">🎮 Руководство по меню</a></li>
                     <li><a href="#run-ru">🏃‍♂️ Как запустить</a></li>
                     <li><a href="#troubleshooting-ru">🆘 Решение проблем</a></li>
                     <li><a href="#support-ru">📞 Поддержка</a></li>
@@ -576,6 +577,205 @@
                     <strong><span class="emoji">💡</span> Совет:</strong> Можете создать несколько аккаунтов с разными режимами - одни для снайпинга, другие для целевых покупок!
                 </div>
             </div>
+            
+            <div class="section" id="menu-guide-ru">
+                <h2><span class="emoji">🎮</span> Руководство по меню приложения</h2>
+                
+                <div class="info">
+                    <strong><span class="emoji">ℹ️</span> Информация:</strong> Приложение имеет интерактивное CLI меню с 5 основными опциями. Вот подробное руководство по каждому пункту меню.
+                </div>
+                
+                <h3><span class="emoji">🚀</span> 1. Запустить задачу (покупка/мониторинг)</h3>
+                <div class="success">
+                    <strong>Что делает:</strong>
+                    <ul>
+                        <li>Запускает основной функционал бота</li>
+                        <li>Аутентифицирует все настроенные аккаунты</li>
+                        <li>Начинает покупку или мониторинг согласно вашему конфигу</li>
+                        <li>Показывает логи и статистику в реальном времени</li>
+                    </ul>
+                </div>
+                
+                <h4>Пошаговый процесс:</h4>
+                <ol>
+                    <li><strong>Аутентификация:</strong> Бот проверяет все аккаунты и аутентифицирует те, которые в этом нуждаются</li>
+                    <li><strong>Валидация:</strong> Проверяет балансы кошельков и конфигурацию</li>
+                    <li><strong>Запуск:</strong> Начинает процесс покупки/мониторинга</li>
+                    <li><strong>Мониторинг:</strong> Показывает живые логи и статистику в консоли</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> Важно:</strong> Убедитесь, что все аккаунты правильно настроены перед запуском!
+                </div>
+                
+                <h3><span class="emoji">🛑</span> 2. Остановить задачу</h3>
+                <div class="info">
+                    <strong>Что делает:</strong>
+                    <ul>
+                        <li>Корректно останавливает все запущенные задачи</li>
+                        <li>Завершает текущие транзакции перед остановкой</li>
+                        <li>Показывает финальную статистику</li>
+                        <li>Сохраняет все данные и логи</li>
+                    </ul>
+                </div>
+                
+                <h4>Когда использовать:</h4>
+                <ul>
+                    <li>Когда хотите временно остановить бота</li>
+                    <li>Перед изменением конфигурации</li>
+                    <li>Когда достигли целей по покупкам</li>
+                    <li>Если заметили проблемы и хотите разобраться</li>
+                </ul>
+                
+                <h3><span class="emoji">🔐</span> 3. Управление аутентификацией аккаунтов</h3>
+                <div class="highlight">
+                    <strong>Что делает:</strong>
+                    <ul>
+                        <li>Показывает статус аутентификации всех аккаунтов</li>
+                        <li>Позволяет выборочную аутентификацию конкретных аккаунтов</li>
+                        <li>Отображает статус файлов сессий и токенов авторизации</li>
+                        <li>Предоставляет детальную информацию об аккаунтах</li>
+                    </ul>
+                </div>
+                
+                <h4>Информация о статусе аккаунта:</h4>
+                <table>
+                    <tr>
+                        <th>Статус</th>
+                        <th>Описание</th>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🟢</span> АКТИВЕН</td>
+                        <td>Аккаунт имеет действительный токен авторизации или файл сессии</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🔴</span> НЕАКТИВЕН</td>
+                        <td>Аккаунт нуждается в аутентификации</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">✅</span> Токен авторизации</td>
+                        <td>Аккаунт имеет действительный bearer токен</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">📁</span> Сессия</td>
+                        <td>Файл сессии Telegram существует</td>
+                    </tr>
+                </table>
+                
+                <h4>Опции аутентификации:</h4>
+                <ol>
+                    <li><strong>Выборочная аутентификация:</strong> Выберите конкретные аккаунты по номерам (например, 1,3,5)</li>
+                    <li><strong>Аутентифицировать все:</strong> Аутентифицировать все неактивные аккаунты сразу</li>
+                    <li><strong>Обновить статус:</strong> Обновить информацию о статусе аккаунтов</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> Примечание:</strong> Аутентификация может потребовать коды подтверждения по телефону для новых аккаунтов.
+                </div>
+                
+                <h3><span class="emoji">💰</span> 4. Показать балансы кошельков</h3>
+                <div class="success">
+                    <strong>Что делает:</strong>
+                    <ul>
+                        <li>Отображает балансы TON кошельков для всех аккаунтов</li>
+                        <li>Показывает адреса кошельков</li>
+                        <li>Указывает на любые ошибки, связанные с кошельками</li>
+                        <li>Помогает проверить достаточность средств перед покупкой</li>
+                    </ul>
+                </div>
+                
+                <h4>Отображаемая информация:</h4>
+                <ul>
+                    <li><strong>Имя аккаунта:</strong> Ваше настроенное имя аккаунта</li>
+                    <li><strong>Номер телефона:</strong> Замаскированный номер телефона для безопасности</li>
+                    <li><strong>Адрес кошелька:</strong> Адрес TON кошелька</li>
+                    <li><strong>Баланс:</strong> Текущий баланс TON</li>
+                    <li><strong>Ошибки:</strong> Любые проблемы, связанные с кошельком</li>
+                </ul>
+                
+                <div class="info">
+                    <strong><span class="emoji">💡</span> Совет:</strong> Регулярно проверяйте балансы, чтобы убедиться, что у вас достаточно TON для покупок!
+                </div>
+                
+                <h3><span class="emoji">🚪</span> 5. Выход</h3>
+                <div class="info">
+                    <strong>Что делает:</strong>
+                    <ul>
+                        <li>Безопасно закрывает приложение</li>
+                        <li>Останавливает все запущенные задачи</li>
+                        <li>Сохраняет текущее состояние</li>
+                        <li>Выполняет операции очистки</li>
+                    </ul>
+                </div>
+                
+                <h4>Лучшие практики:</h4>
+                <ul>
+                    <li>Всегда используйте эту опцию для выхода (не закрывайте принудительно)</li>
+                    <li>Дождитесь завершения задач перед выходом</li>
+                    <li>Проверьте финальную статистику перед закрытием</li>
+                </ul>
+                
+                <h3><span class="emoji">📊</span> Понимание статусных сообщений</h3>
+                <table>
+                    <tr>
+                        <th>Статус</th>
+                        <th>Значение</th>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">⭕</span> Остановлен</td>
+                        <td>В данный момент задачи не выполняются</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🟢</span> Работает</td>
+                        <td>Бот активно покупает/мониторит</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🔄</span> Аутентификация</td>
+                        <td>Идет процесс аутентификации аккаунта</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">✅</span> Успех</td>
+                        <td>Операция выполнена успешно</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">❌</span> Ошибка</td>
+                        <td>Операция не удалась - проверьте сообщение об ошибке</td>
+                    </tr>
+                </table>
+                
+                <h3><span class="emoji">🔧</span> Устранение распространенных проблем</h3>
+                
+                <h4>Проблемы с аутентификацией аккаунтов:</h4>
+                <ul>
+                    <li><strong>Сессия не найдена:</strong> Используйте пункт меню 3 для аутентификации</li>
+                    <li><strong>Неверный номер телефона:</strong> Убедитесь, что номер начинается с '+' и кода страны</li>
+                    <li><strong>Требуется 2FA:</strong> Добавьте <code>two_factor_password</code> в конфиг</li>
+                </ul>
+                
+                <h4>Проблемы с кошельком:</h4>
+                <ul>
+                    <li><strong>Недостаточный баланс:</strong> Добавьте больше TON в ваш кошелек</li>
+                    <li><strong>Неверная seed фраза:</strong> Проверьте формат seed фразы (12-24 слова)</li>
+                    <li><strong>Кошелек не найден:</strong> Убедитесь, что seed фраза правильная</li>
+                </ul>
+                
+                <h4>Проблемы с покупкой:</h4>
+                <ul>
+                    <li><strong>Коллекция не найдена:</strong> Проверьте ID коллекции и персонажа</li>
+                    <li><strong>Цена изменилась:</strong> Цена коллекции могла быть обновлена</li>
+                    <li><strong>Распродано:</strong> Коллекция может быть распродана</li>
+                </ul>
+                
+                <div class="highlight">
+                    <strong><span class="emoji">💡</span> Профессиональные советы:</strong>
+                    <ul>
+                        <li>Всегда тестируйте сначала с небольшими суммами</li>
+                        <li>Ведите резервные копии вашего файла конфигурации</li>
+                        <li>Следите за логами на предмет сообщений об ошибках</li>
+                        <li>Используйте тестовый режим для первоначальной настройки</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         
         <!-- English Version -->
@@ -588,6 +788,7 @@
                     <li><a href="#telegram-api-en">🔑 Getting Telegram API Keys</a></li>
                     <li><a href="#config-en">⚙️ Configuration Setup</a></li>
                     <li><a href="#modes-en">🎯 Operating Modes</a></li>
+                    <li><a href="#menu-guide-en">🎮 Application Menu Guide</a></li>
                     <li><a href="#run-en">🏃‍♂️ How to Run</a></li>
                     <li><a href="#troubleshooting-en">🆘 Troubleshooting</a></li>
                     <li><a href="#support-en">📞 Support</a></li>
@@ -903,6 +1104,205 @@
                 
                 <div class="highlight">
                     <strong><span class="emoji">💡</span> Tip:</strong> You can create multiple accounts with different modes - some for sniping, others for targeted purchases!
+                </div>
+            </div>
+            
+            <div class="section" id="menu-guide-en">
+                <h2><span class="emoji">🎮</span> Application Menu Guide</h2>
+                
+                <div class="info">
+                    <strong><span class="emoji">ℹ️</span> Info:</strong> The application has an interactive CLI menu with 5 main options. Here's a detailed guide for each menu item.
+                </div>
+                
+                <h3><span class="emoji">🚀</span> 1. Start Task (Purchase/Monitoring)</h3>
+                <div class="success">
+                    <strong>What it does:</strong>
+                    <ul>
+                        <li>Starts the main bot functionality</li>
+                        <li>Authenticates all configured accounts</li>
+                        <li>Begins purchasing or monitoring based on your config</li>
+                        <li>Shows real-time logs and statistics</li>
+                    </ul>
+                </div>
+                
+                <h4>Step-by-step process:</h4>
+                <ol>
+                    <li><strong>Authentication:</strong> Bot checks all accounts and authenticates those that need it</li>
+                    <li><strong>Validation:</strong> Verifies wallet balances and configuration</li>
+                    <li><strong>Start:</strong> Begins the purchasing/monitoring process</li>
+                    <li><strong>Monitoring:</strong> Shows live logs and statistics in the console</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> Important:</strong> Make sure all accounts are properly configured before starting!
+                </div>
+                
+                <h3><span class="emoji">🛑</span> 2. Stop Task</h3>
+                <div class="info">
+                    <strong>What it does:</strong>
+                    <ul>
+                        <li>Gracefully stops all running tasks</li>
+                        <li>Completes current transactions before stopping</li>
+                        <li>Shows final statistics</li>
+                        <li>Saves all data and logs</li>
+                    </ul>
+                </div>
+                
+                <h4>When to use:</h4>
+                <ul>
+                    <li>When you want to stop the bot temporarily</li>
+                    <li>Before changing configuration</li>
+                    <li>When you've reached your purchase goals</li>
+                    <li>If you notice any issues and want to investigate</li>
+                </ul>
+                
+                <h3><span class="emoji">🔐</span> 3. Manage Account Authentication</h3>
+                <div class="highlight">
+                    <strong>What it does:</strong>
+                    <ul>
+                        <li>Shows authentication status of all accounts</li>
+                        <li>Allows selective authentication of specific accounts</li>
+                        <li>Displays session files and auth tokens status</li>
+                        <li>Provides detailed account information</li>
+                    </ul>
+                </div>
+                
+                <h4>Account Status Information:</h4>
+                <table>
+                    <tr>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🟢</span> ACTIVE</td>
+                        <td>Account has valid auth token or session file</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🔴</span> INACTIVE</td>
+                        <td>Account needs authentication</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">✅</span> Auth Token</td>
+                        <td>Account has valid bearer token</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">📁</span> Session</td>
+                        <td>Telegram session file exists</td>
+                    </tr>
+                </table>
+                
+                <h4>Authentication Options:</h4>
+                <ol>
+                    <li><strong>Selective Authentication:</strong> Choose specific accounts by numbers (e.g., 1,3,5)</li>
+                    <li><strong>Authenticate All:</strong> Authenticate all inactive accounts at once</li>
+                    <li><strong>Refresh Status:</strong> Update account status information</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> Note:</strong> Authentication may require phone verification codes for new accounts.
+                </div>
+                
+                <h3><span class="emoji">💰</span> 4. Show Wallet Balances</h3>
+                <div class="success">
+                    <strong>What it does:</strong>
+                    <ul>
+                        <li>Displays TON wallet balances for all accounts</li>
+                        <li>Shows wallet addresses</li>
+                        <li>Indicates any wallet-related errors</li>
+                        <li>Helps verify sufficient funds before purchasing</li>
+                    </ul>
+                </div>
+                
+                <h4>Information displayed:</h4>
+                <ul>
+                    <li><strong>Account Name:</strong> Your configured account name</li>
+                    <li><strong>Phone Number:</strong> Masked phone number for security</li>
+                    <li><strong>Wallet Address:</strong> TON wallet address</li>
+                    <li><strong>Balance:</strong> Current TON balance</li>
+                    <li><strong>Errors:</strong> Any wallet-related issues</li>
+                </ul>
+                
+                <div class="info">
+                    <strong><span class="emoji">💡</span> Tip:</strong> Check balances regularly to ensure you have enough TON for purchases!
+                </div>
+                
+                <h3><span class="emoji">🚪</span> 5. Exit</h3>
+                <div class="info">
+                    <strong>What it does:</strong>
+                    <ul>
+                        <li>Safely closes the application</li>
+                        <li>Stops all running tasks</li>
+                        <li>Saves current state</li>
+                        <li>Performs cleanup operations</li>
+                    </ul>
+                </div>
+                
+                <h4>Best practices:</h4>
+                <ul>
+                    <li>Always use this option to exit (don't force close)</li>
+                    <li>Wait for tasks to complete before exiting</li>
+                    <li>Check final statistics before closing</li>
+                </ul>
+                
+                <h3><span class="emoji">📊</span> Understanding Status Messages</h3>
+                <table>
+                    <tr>
+                        <th>Status</th>
+                        <th>Meaning</th>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">⭕</span> Stopped</td>
+                        <td>No tasks are currently running</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🟢</span> Running</td>
+                        <td>Bot is actively purchasing/monitoring</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">🔄</span> Authenticating</td>
+                        <td>Account authentication in progress</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">✅</span> Success</td>
+                        <td>Operation completed successfully</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">❌</span> Error</td>
+                        <td>Operation failed - check error message</td>
+                    </tr>
+                </table>
+                
+                <h3><span class="emoji">🔧</span> Troubleshooting Common Issues</h3>
+                
+                <h4>Account Authentication Problems:</h4>
+                <ul>
+                    <li><strong>Session not found:</strong> Use menu option 3 to authenticate</li>
+                    <li><strong>Invalid phone number:</strong> Ensure phone starts with '+' and country code</li>
+                    <li><strong>2FA required:</strong> Add <code>two_factor_password</code> to config</li>
+                </ul>
+                
+                <h4>Wallet Issues:</h4>
+                <ul>
+                    <li><strong>Insufficient balance:</strong> Add more TON to your wallet</li>
+                    <li><strong>Invalid seed phrase:</strong> Check seed phrase format (12-24 words)</li>
+                    <li><strong>Wallet not found:</strong> Verify seed phrase is correct</li>
+                </ul>
+                
+                <h4>Purchase Problems:</h4>
+                <ul>
+                    <li><strong>Collection not found:</strong> Verify collection and character IDs</li>
+                    <li><strong>Price changed:</strong> Collection price may have been updated</li>
+                    <li><strong>Sold out:</strong> Collection may be out of stock</li>
+                </ul>
+                
+                <div class="highlight">
+                    <strong><span class="emoji">💡</span> Pro Tips:</strong>
+                    <ul>
+                        <li>Always test with small amounts first</li>
+                        <li>Keep backup copies of your config file</li>
+                        <li>Monitor logs for any error messages</li>
+                        <li>Use test mode for initial setup</li>
+                    </ul>
                 </div>
             </div>
         </div>

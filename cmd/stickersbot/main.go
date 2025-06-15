@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"stickersbot/internal/config"
 	"stickersbot/internal/service"
-	"stickersbot/internal/version"
 )
 
 // CLI represents the command line interface
@@ -231,21 +231,25 @@ func (c *CLI) validateAccount(num int, account config.Account) []string {
 	return errors
 }
 
-// checkLicense performs license validation
+// checkLicense performs license validation (currently disabled for development)
 func (c *CLI) checkLicense() error {
-	if version.Production {
-		fmt.Println("🔐 Checking license...")
+	fmt.Println("🔐 Checking license...")
+
+	// License check is currently disabled for development
+	// In production, this would validate the license key
+	if false { // Change to true to enable license checking
 		if c.config.LicenseKey == "" {
 			return fmt.Errorf("license_key not specified in config.json")
 		}
 
-		err := authenticate(c.config.LicenseKey)
-		if err != nil {
-			return fmt.Errorf("license authentication: %w", err)
-		}
+		// Here would be license validation logic
+		// err := validateLicense(c.config.LicenseKey)
+		// if err != nil {
+		//     return fmt.Errorf("license authentication: %w", err)
+		// }
 
 		fmt.Println("✅ License authenticated successfully")
-		startVerifier(c.config.LicenseKey)
+		// startLicenseVerifier(c.config.LicenseKey)
 	} else {
 		fmt.Println("🧪 Running in development mode (license check disabled)")
 		if c.config.LicenseKey == "" {
@@ -309,7 +313,7 @@ func (c *CLI) runMainMenu() {
 	for {
 		c.printMainMenu()
 
-		fmt.Print("Select menu option (1-4): ")
+		fmt.Print("Select menu option (1-5): ")
 		input, _ := reader.ReadString('\n')
 		choice := strings.TrimSpace(input)
 
@@ -319,8 +323,10 @@ func (c *CLI) runMainMenu() {
 		case "2":
 			c.handleStopTask()
 		case "3":
-			c.handleShowBalances()
+			c.handleManageAccountAuthentication()
 		case "4":
+			c.handleShowBalances()
+		case "5":
 			fmt.Println("👋 Goodbye!")
 			return
 		default:
@@ -344,10 +350,11 @@ func (c *CLI) printMainMenu() {
 
 	fmt.Printf("Status: %s\n", status)
 	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println("1. 🚀 Start task (purchase/monitoring). For stop input 2 and Enter")
-	fmt.Println("2. 🛑 Stop task(in running task mode)")
-	fmt.Println("3. 💰 Show wallet balances")
-	fmt.Println("4. 🚪 Exit")
+	fmt.Println("1. 🚀 Start task (purchase/monitoring)")
+	fmt.Println("2. 🛑 Stop task")
+	fmt.Println("3. 🔐 Manage account authentication")
+	fmt.Println("4. 💰 Show wallet balances")
+	fmt.Println("5. 🚪 Exit")
 	fmt.Println(strings.Repeat("=", 60))
 }
 
@@ -487,4 +494,317 @@ func maskSeedPhrase(seed string) string {
 // findConfigPath returns the path to the configuration file
 func findConfigPath() string {
 	return "./config.json"
+}
+
+// handleManageAccountAuthentication manages account authentication
+func (c *CLI) handleManageAccountAuthentication() {
+	fmt.Println("🔐 Account Authentication Management")
+	fmt.Println(strings.Repeat("-", 80))
+
+	// Check account statuses
+	accountStatuses := c.checkAccountStatuses()
+
+	for {
+		c.printAccountStatuses(accountStatuses)
+
+		fmt.Println("\nOptions:")
+		fmt.Println("1. 🔄 Authenticate selected accounts")
+		fmt.Println("2. 🔄 Authenticate all accounts")
+		fmt.Println("3. 📋 Refresh account statuses")
+		fmt.Println("4. 🔙 Back to main menu")
+
+		fmt.Print("Select option (1-4): ")
+		reader := bufio.NewReader(os.Stdin)
+		input, _ := reader.ReadString('\n')
+		choice := strings.TrimSpace(input)
+
+		switch choice {
+		case "1":
+			c.handleSelectiveAuthentication(&accountStatuses)
+		case "2":
+			c.handleAuthenticateAllAccounts(&accountStatuses)
+		case "3":
+			accountStatuses = c.checkAccountStatuses()
+			fmt.Println("✅ Account statuses refreshed")
+		case "4":
+			return
+		default:
+			fmt.Println("❌ Invalid choice. Please try again.")
+		}
+
+		fmt.Println() // Add spacing
+	}
+}
+
+// AccountStatus represents the authentication status of an account
+type AccountStatus struct {
+	Index        int
+	Name         string
+	PhoneNumber  string
+	HasAuthToken bool
+	HasSession   bool
+	IsActive     bool
+	Error        string
+}
+
+// checkAccountStatuses checks the authentication status of all accounts
+func (c *CLI) checkAccountStatuses() []AccountStatus {
+	var statuses []AccountStatus
+
+	for i, account := range c.config.Accounts {
+		status := AccountStatus{
+			Index:        i,
+			Name:         account.Name,
+			PhoneNumber:  account.PhoneNumber,
+			HasAuthToken: account.AuthToken != "",
+		}
+
+		// Check if session file exists - look in multiple possible locations
+		if account.PhoneNumber != "" {
+			// Clean phone number (remove + and other characters for file names)
+			cleanPhone := strings.ReplaceAll(account.PhoneNumber, "+", "")
+
+			// Try different session file patterns and locations
+			possiblePaths := []string{
+				// Current directory patterns with original phone
+				fmt.Sprintf("sessions/%s.session", account.PhoneNumber),
+				fmt.Sprintf("session/%s.session", account.PhoneNumber),
+				fmt.Sprintf("%s.session", account.PhoneNumber),
+				fmt.Sprintf("sessions/%s", account.PhoneNumber),
+				fmt.Sprintf("session/%s", account.PhoneNumber),
+				// Current directory patterns with clean phone (without +)
+				fmt.Sprintf("sessions/%s.session", cleanPhone),
+				fmt.Sprintf("session/%s.session", cleanPhone),
+				fmt.Sprintf("%s.session", cleanPhone),
+				fmt.Sprintf("sessions/%s", cleanPhone),
+				fmt.Sprintf("session/%s", cleanPhone),
+				// bin directory patterns (where exe is located) with original phone
+				fmt.Sprintf("bin/sessions/%s.session", account.PhoneNumber),
+				fmt.Sprintf("bin/session/%s.session", account.PhoneNumber),
+				fmt.Sprintf("bin/%s.session", account.PhoneNumber),
+				fmt.Sprintf("bin/sessions/%s", account.PhoneNumber),
+				fmt.Sprintf("bin/session/%s", account.PhoneNumber),
+				// bin directory patterns with clean phone
+				fmt.Sprintf("bin/sessions/%s.session", cleanPhone),
+				fmt.Sprintf("bin/session/%s.session", cleanPhone),
+				fmt.Sprintf("bin/%s.session", cleanPhone),
+				fmt.Sprintf("bin/sessions/%s", cleanPhone),
+				fmt.Sprintf("bin/session/%s", cleanPhone),
+				// Relative to exe location
+				fmt.Sprintf("./sessions/%s.session", account.PhoneNumber),
+				fmt.Sprintf("./session/%s.session", account.PhoneNumber),
+				fmt.Sprintf("./%s.session", account.PhoneNumber),
+				fmt.Sprintf("./sessions/%s.session", cleanPhone),
+				fmt.Sprintf("./session/%s.session", cleanPhone),
+				fmt.Sprintf("./%s.session", cleanPhone),
+			}
+
+			for _, path := range possiblePaths {
+				if _, err := os.Stat(path); err == nil {
+					status.HasSession = true
+					break
+				}
+			}
+		}
+
+		// Determine if account is active (has either auth token or session)
+		status.IsActive = status.HasAuthToken || status.HasSession
+
+		// Check for potential issues
+		if account.PhoneNumber == "" && account.AuthToken == "" {
+			status.Error = "No phone number or auth token specified"
+		} else if account.PhoneNumber != "" && !strings.HasPrefix(account.PhoneNumber, "+") {
+			status.Error = "Phone number must start with '+'"
+		}
+
+		statuses = append(statuses, status)
+	}
+
+	return statuses
+}
+
+// printAccountStatuses displays the status of all accounts
+func (c *CLI) printAccountStatuses(statuses []AccountStatus) {
+	fmt.Println("\n📋 Account Authentication Status:")
+	fmt.Println(strings.Repeat("-", 80))
+
+	for _, status := range statuses {
+		fmt.Printf("Account %d: %s\n", status.Index+1, status.Name)
+
+		if status.PhoneNumber != "" {
+			fmt.Printf("   📱 Phone: %s\n", maskPhoneNumber(status.PhoneNumber))
+		} else {
+			fmt.Printf("   📱 Phone: Not specified\n")
+		}
+
+		// Auth token status
+		if status.HasAuthToken {
+			fmt.Printf("   🎫 Auth Token: ✅ Available\n")
+		} else {
+			fmt.Printf("   🎫 Auth Token: ❌ Not available\n")
+		}
+
+		// Session status with debug info
+		if status.HasSession {
+			fmt.Printf("   📁 Session: ✅ Active\n")
+		} else {
+			fmt.Printf("   📁 Session: ❌ Not found\n")
+			// Show where we looked for sessions (debug info)
+			if status.PhoneNumber != "" {
+				cleanPhone := strings.ReplaceAll(status.PhoneNumber, "+", "")
+				fmt.Printf("   🔍 Searched for: %s.session, %s.session\n", status.PhoneNumber, cleanPhone)
+			}
+		}
+
+		// Overall status
+		if status.IsActive {
+			fmt.Printf("   🟢 Status: ACTIVE\n")
+		} else {
+			fmt.Printf("   🔴 Status: INACTIVE\n")
+		}
+
+		// Error if any
+		if status.Error != "" {
+			fmt.Printf("   ⚠️  Issue: %s\n", status.Error)
+		}
+
+		fmt.Println()
+	}
+}
+
+// handleSelectiveAuthentication allows user to select which accounts to authenticate
+func (c *CLI) handleSelectiveAuthentication(accountStatuses *[]AccountStatus) {
+	fmt.Println("🎯 Select accounts to authenticate:")
+	fmt.Println("Enter account numbers separated by commas (e.g., 1,3,5) or 'all' for all accounts")
+
+	// Show inactive accounts
+	inactiveAccounts := []AccountStatus{}
+	for _, status := range *accountStatuses {
+		if !status.IsActive && status.Error == "" {
+			inactiveAccounts = append(inactiveAccounts, status)
+		}
+	}
+
+	if len(inactiveAccounts) == 0 {
+		fmt.Println("✅ All accounts are already active!")
+		fmt.Print("Press Enter to continue...")
+		bufio.NewReader(os.Stdin).ReadLine()
+		return
+	}
+
+	fmt.Println("\nInactive accounts:")
+	for _, status := range inactiveAccounts {
+		fmt.Printf("  %d. %s (%s)\n", status.Index+1, status.Name, maskPhoneNumber(status.PhoneNumber))
+	}
+
+	fmt.Print("\nEnter your choice: ")
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	choice := strings.TrimSpace(input)
+
+	if choice == "" {
+		return
+	}
+
+	var selectedIndices []int
+
+	if strings.ToLower(choice) == "all" {
+		for _, status := range inactiveAccounts {
+			selectedIndices = append(selectedIndices, status.Index)
+		}
+	} else {
+		// Parse comma-separated numbers
+		parts := strings.Split(choice, ",")
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if num, err := strconv.Atoi(part); err == nil && num >= 1 && num <= len(*accountStatuses) {
+				selectedIndices = append(selectedIndices, num-1)
+			}
+		}
+	}
+
+	if len(selectedIndices) == 0 {
+		fmt.Println("❌ No valid accounts selected")
+		return
+	}
+
+	// Authenticate selected accounts
+	c.authenticateSelectedAccounts(selectedIndices)
+
+	// Refresh statuses after authentication
+	*accountStatuses = c.checkAccountStatuses()
+	fmt.Println("📋 Account statuses refreshed after authentication")
+}
+
+// handleAuthenticateAllAccounts authenticates all inactive accounts
+func (c *CLI) handleAuthenticateAllAccounts(accountStatuses *[]AccountStatus) {
+	fmt.Println("🔄 Authenticating all accounts...")
+
+	ctx := context.Background()
+	if err := c.authIntegration.AuthorizeAccounts(ctx); err != nil {
+		fmt.Printf("❌ Authentication error: %v\n", err)
+	} else {
+		fmt.Println("✅ All accounts authenticated successfully!")
+	}
+
+	// Refresh statuses after authentication
+	*accountStatuses = c.checkAccountStatuses()
+	fmt.Println("📋 Account statuses refreshed after authentication")
+
+	fmt.Print("Press Enter to continue...")
+	bufio.NewReader(os.Stdin).ReadLine()
+}
+
+// authenticateSelectedAccounts authenticates specific accounts by their indices
+func (c *CLI) authenticateSelectedAccounts(indices []int) {
+	fmt.Printf("🔄 Authenticating %d selected accounts...\n", len(indices))
+
+	ctx := context.Background()
+	successCount := 0
+
+	// ИСПРАВЛЕНИЕ: НЕ создаем tempAuthIntegration который портит конфиг!
+	// Вместо этого аутентифицируем аккаунты через основной authIntegration
+	// но только выбранные индексы
+
+	// Сохраняем оригинальные токены
+	originalTokens := make(map[int]string)
+	for _, index := range indices {
+		if index >= 0 && index < len(c.config.Accounts) {
+			originalTokens[index] = c.config.Accounts[index].AuthToken
+		}
+	}
+
+	for _, index := range indices {
+		if index < 0 || index >= len(c.config.Accounts) {
+			continue
+		}
+
+		account := c.config.Accounts[index]
+		fmt.Printf("🔐 Authenticating %s (%s)...\n", account.Name, maskPhoneNumber(account.PhoneNumber))
+
+		// Временно очищаем токен чтобы authIntegration попытался аутентифицировать
+		c.config.Accounts[index].AuthToken = ""
+
+		// Используем основной authIntegration для аутентификации всех аккаунтов
+		// но только те что нуждаются в аутентификации (без токенов) будут обработаны
+		if err := c.authIntegration.AuthorizeAccounts(ctx); err != nil {
+			fmt.Printf("❌ Failed to authenticate %s: %v\n", account.Name, err)
+			// Восстанавливаем оригинальный токен при ошибке
+			c.config.Accounts[index].AuthToken = originalTokens[index]
+		} else {
+			fmt.Printf("✅ Successfully authenticated %s\n", account.Name)
+			successCount++
+		}
+
+		// Восстанавливаем токены других аккаунтов (которые не должны были аутентифицироваться)
+		for otherIndex, originalToken := range originalTokens {
+			if otherIndex != index && originalToken != "" {
+				c.config.Accounts[otherIndex].AuthToken = originalToken
+			}
+		}
+	}
+
+	fmt.Printf("📊 Authentication complete: %d/%d accounts successful\n", successCount, len(indices))
+	fmt.Print("Press Enter to continue...")
+	bufio.NewReader(os.Stdin).ReadLine()
 }
