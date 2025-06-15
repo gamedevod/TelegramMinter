@@ -72,7 +72,22 @@ Telegram Auto Buy is a program for automatic sticker purchasing in Telegram. The
    - **API ID** (number, e.g., 1234567)
    - **API Hash** (string, e.g., "abcd1234efgh5678ijkl9012mnop3456")
 
-### Step 4: Fill in config.json
+### Step 4: Configure TON Wallet
+
+⚠️ **IMPORTANT: Wallet Address Type Configuration**
+
+Currently, the program uses **V4R2** address type. If you want to use this wallet in Tonkeeper, you will need to add this address type:
+
+**How to configure V4R2 address in Tonkeeper:**
+1. Open Tonkeeper app
+2. Go to **Settings**
+3. Find **"Current Address"** option
+4. Select **V4R2** address
+5. Open the V4R2 wallet type and fund exactly this one
+
+> 📝 **Note:** Future updates will include W5 address support for better compatibility.
+
+### Step 5: Fill in config.json
 
 In the `config.json` file you will see an empty template. Fill it with your data:
 
