@@ -76,11 +76,11 @@ func main() {
 		return
 	}
 
-	// Perform license check
-	if err := cli.checkLicense(); err != nil {
-		cli.handleError("License check error", err)
-		return
-	}
+	//// Perform license check
+	//if err := cli.checkLicense(); err != nil {
+	//	cli.handleError("License check error", err)
+	//	return
+	//}
 
 	// Initialize services
 	if err := cli.initializeServices(); err != nil {
