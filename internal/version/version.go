@@ -12,4 +12,4 @@ var Version = "1.0.0"
 // such as "dev" (in development), "beta", "rc1", etc.
 var Prerelease = "beta"
 
-var Production = false
+var Production = true

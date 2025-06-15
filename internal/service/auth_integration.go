@@ -50,9 +50,6 @@ func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 				ai.config.APIHash,
 				account.PhoneNumber,
 				sessionFile,
-				ai.config.BotUsername,
-				ai.config.WebAppURL,
-				ai.config.TokenAPIURL,
 			)
 
 			// Perform authorization

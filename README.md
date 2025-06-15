@@ -48,7 +48,7 @@ Telegram Auto Buy is a program for automatic sticker purchasing in Telegram. The
 ## 🚀 Quick Start
 
 ### Step 1: Download the program
-1. Download the program archive (contains `stickersbot.exe` and `config_empty.json`)
+1. Download the program archive (contains `stickersbot.exe` and `config.json`)
 2. Extract the archive to any folder on your computer (e.g., `TelegramMinter`)
 
 ### Step 2: Configure the configuration file
@@ -81,9 +81,6 @@ In the `config.json` file you will see an empty template. Fill it with your data
   "license_key": "",
   "api_id": 0,
   "api_hash": "",
-  "bot_username": "",
-  "web_app_url": "",
-  "token_api_url": "",
   "test_mode": true,
   "test_address": "",
   "accounts": [
@@ -96,7 +93,19 @@ In the `config.json` file you will see an empty template. Fill it with your data
       "count": 1,
       "threads": 1,
       "max_transactions": 0,
-      "seed_phrase": ""
+      "seed_phrase": "",
+      "snipe_monitor": {
+        "enabled": false,
+        "supply_range": {
+          "min": 10,
+          "max": 5000
+        },
+        "price_range": {
+          "min": 1000000000,
+          "max": 10000000000
+        },
+        "word_filter": ["keyword1", "keyword2"]
+      }
     }
   ]
 }
@@ -108,9 +117,6 @@ In the `config.json` file you will see an empty template. Fill it with your data
   "license_key": "YOUR_LICENSE_KEY_HERE",
   "api_id": 1234567,
   "api_hash": "abcd1234efgh5678ijkl9012mnop3456",
-  "bot_username": "mystickersbot",
-  "web_app_url": "https://t.me/mystickersbot/app",
-  "token_api_url": "https://api.example.com/token",
   "test_mode": true,
   "test_address": "UQD...",
   "accounts": [
@@ -123,7 +129,19 @@ In the `config.json` file you will see an empty template. Fill it with your data
       "count": 1,
       "threads": 1,
       "max_transactions": 10,
-      "seed_phrase": "word1 word2 word3 ... word24"
+      "seed_phrase": "word1 word2 word3 ... word24",
+      "snipe_monitor": {
+        "enabled": false,
+        "supply_range": {
+          "min": 10,
+          "max": 5000
+        },
+        "price_range": {
+          "min": 1000000000,
+          "max": 10000000000
+        },
+        "word_filter": ["azuki", "pokemon", "cryptopunks"]
+      }
     }
   ]
 }
@@ -136,9 +154,6 @@ In the `config.json` file you will see an empty template. Fill it with your data
 - **`license_key`** - Program license key (obtain from developers)
 - **`api_id`** - Your Telegram application ID (obtained in step 3)
 - **`api_hash`** - Your Telegram application hash (obtained in step 3)
-- **`bot_username`** - Bot name without @ symbol (e.g., if bot is @mystickersbot, write "mystickersbot")
-- **`web_app_url`** - Link to the bot's web application
-- **`token_api_url`** - API link for getting tokens
 - **`test_mode`** - Test mode (true = test, false = real purchases)
 - **`test_address`** - Wallet address for test payments
 
@@ -153,6 +168,72 @@ In the `config.json` file you will see an empty template. Fill it with your data
 - **`threads`** - Number of threads (recommended 1-3)
 - **`max_transactions`** - Maximum transactions (0 = no limit)
 - **`seed_phrase`** - TON wallet seed phrase (12-24 words separated by spaces)
+- **`snipe_monitor`** - Snipe monitoring settings (optional)
+
+## ⚙️ Operating Modes
+
+> **⚠️ IMPORTANT:** The program has two fundamentally different operating modes depending on the `snipe_monitor` setting!
+
+### 🔍 Snipe Monitoring Mode (`snipe_monitor.enabled: true`)
+
+**How it works:**
+- The program **waits for NEW collections** to appear on the platform
+- When a new collection appears that matches your criteria, the program **automatically buys it**
+- The `collection` and `character` parameters in the config are **IGNORED**
+- The program works in **constant monitoring** mode
+
+**Example config with snipe monitoring enabled:**
+```json
+{
+  "name": "Sniper Account",
+  "phone_number": "+1234567890",
+  "collection": 0,  // ← Ignored in this mode
+  "character": 0,   // ← Ignored in this mode
+  "currency": "TON",
+  "count": 1,
+  "threads": 1,
+  "max_transactions": 5,
+  "seed_phrase": "your seed phrase here",
+  "snipe_monitor": {
+    "enabled": true,  // ← SNIPE MODE ENABLED
+    "supply_range": {
+      "min": 100,
+      "max": 10000
+    },
+    "price_range": {
+      "min": 500000000,
+      "max": 5000000000
+    },
+    "word_filter": ["rare", "limited", "exclusive"]
+  }
+}
+```
+
+### 🎯 Direct Purchase Mode (`snipe_monitor.enabled: false` or absent)
+
+**How it works:**
+- The program **immediately buys** the specified `collection` and `character` from the config
+- No monitoring - **direct action**
+- The `collection` and `character` parameters are **REQUIRED**
+- Perfect when you **know exactly** what you want to buy
+
+**Example config with direct purchase:**
+```json
+{
+  "name": "Direct Purchase",
+  "phone_number": "+1234567890",
+  "collection": 123,  // ← REQUIRED collection ID
+  "character": 456,   // ← REQUIRED character ID
+  "currency": "TON",
+  "count": 1,
+  "threads": 1,
+  "max_transactions": 1,
+  "seed_phrase": "your seed phrase here",
+  "snipe_monitor": {
+    "enabled": false  // ← SNIPE MODE DISABLED
+  }
+}
+```
 
 ### Snipe mode (optional):
 

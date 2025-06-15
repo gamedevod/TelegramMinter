@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"stickersbot/internal/client"
+	"stickersbot/internal/constants"
 
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
@@ -23,22 +24,16 @@ type AuthService struct {
 	APIHash     string
 	PhoneNumber string
 	SessionFile string
-	BotUsername string // Bot username for token retrieval
-	WebAppURL   string // Web App URL
-	TokenAPIURL string // API URL for Bearer token retrieval
 	client      *telegram.Client
 }
 
 // NewAuthService creates a new authorization service
-func NewAuthService(apiId int, apiHash, phoneNumber, sessionFile, botUsername, webAppURL, tokenAPIURL string) *AuthService {
+func NewAuthService(apiId int, apiHash, phoneNumber, sessionFile string) *AuthService {
 	return &AuthService{
 		APIId:       apiId,
 		APIHash:     apiHash,
 		PhoneNumber: phoneNumber,
 		SessionFile: sessionFile,
-		BotUsername: botUsername,
-		WebAppURL:   webAppURL,
-		TokenAPIURL: tokenAPIURL,
 	}
 }
 
@@ -155,17 +150,9 @@ func (a *AuthService) getBearerToken(ctx context.Context) (string, error) {
 func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (string, error) {
 	api := a.client.API()
 
-	// Use settings from configuration or default values
-	botUsername := a.BotUsername
-	webAppURL := a.WebAppURL
-
-	// Default values if not set in configuration
-	if botUsername == "" {
-		botUsername = "stickersbot" // replace with your bot
-	}
-	if webAppURL == "" {
-		webAppURL = "https://stickers.bot/app" // replace with your URL
-	}
+	// Use constants instead of configuration values
+	botUsername := constants.BotUsername
+	webAppURL := constants.WebAppURL
 
 	log.Printf("🔧 Using bot: %s, Web App: %s", botUsername, webAppURL)
 
@@ -200,11 +187,7 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 	}
 
 	// 2. Send auth data to API to get Bearer token (analog of auth from Python)
-	apiURL := a.TokenAPIURL
-	if apiURL == "" {
-		apiURL = "https://api.stickerdom.store" // fix to correct API
-	}
-
+	apiURL := constants.TokenAPIURL
 	log.Printf("🌐 Using API URL: %s", apiURL)
 
 	// Use existing HTTPClient
@@ -238,7 +221,7 @@ func (a *AuthService) fallbackToTempToken(userID int64) (string, error) {
 	log.Printf("🎫 Created temporary Bearer token: %s", maskToken(tempToken))
 	log.Printf("⚠️  WARNING: Using temporary token!")
 	log.Printf("⚠️  Check settings: bot_username=%s, web_app_url=%s, token_api_url=%s",
-		a.BotUsername, a.WebAppURL, a.TokenAPIURL)
+		constants.BotUsername, constants.WebAppURL, constants.TokenAPIURL)
 
 	return tempToken, nil
 }

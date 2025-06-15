@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"stickersbot/internal/version"
 	"syscall"
 	"time"
 
@@ -64,24 +63,24 @@ func main() {
 	fmt.Printf("📋 Configuration loaded: %s\n", cfgPath)
 
 	// Perform license authentication
-	if version.Production {
-		fmt.Println("🔐 Checking license...")
-		if cfg.LicenseKey == "" {
-			fmt.Println("❌ License key is not specified in config.json")
-			os.Exit(1)
-		}
-
-		err := authenticate(cfg.LicenseKey)
-		if err != nil {
-			fmt.Printf("❌ License authentication failed: %v\n", err)
-			os.Exit(1)
-		}
-
-		fmt.Println("✅ License authenticated successfully")
-		startVerifier(cfg.LicenseKey)
-	} else {
-		fmt.Println("🧪 Running in development mode (license check disabled)")
-	}
+	//if version.Production {
+	//	fmt.Println("🔐 Checking license...")
+	//	if cfg.LicenseKey == "" {
+	//		fmt.Println("❌ License key is not specified in config.json")
+	//		os.Exit(1)
+	//	}
+	//
+	//	err := authenticate(cfg.LicenseKey)
+	//	if err != nil {
+	//		fmt.Printf("❌ License authentication failed: %v\n", err)
+	//		os.Exit(1)
+	//	}
+	//
+	//	fmt.Println("✅ License authenticated successfully")
+	//	startVerifier(cfg.LicenseKey)
+	//} else {
+	//	fmt.Println("🧪 Running in development mode (license check disabled)")
+	//}
 
 	// Validate configuration
 	if !cfg.IsValid() {

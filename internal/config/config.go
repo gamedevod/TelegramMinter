@@ -45,10 +45,6 @@ type Config struct {
 	// License settings
 	LicenseKey string `json:"license_key"`
 
-	// API settings
-	APIBaseURL string `json:"api_base_url"`
-	APIKey     string `json:"api_key"`
-
 	// Interface settings
 	Theme    string `json:"theme"`
 	Language string `json:"language"`
@@ -64,11 +60,8 @@ type Config struct {
 	TestAddress string `json:"test_address"`
 
 	// Common Telegram settings (for all accounts)
-	APIId       int    `json:"api_id"`        // API ID from my.telegram.org
-	APIHash     string `json:"api_hash"`      // API Hash from my.telegram.org
-	BotUsername string `json:"bot_username"`  // Bot username for token retrieval
-	WebAppURL   string `json:"web_app_url"`   // Web App URL for token retrieval
-	TokenAPIURL string `json:"token_api_url"` // API URL for Bearer token retrieval
+	APIId   int    `json:"api_id"`   // API ID from my.telegram.org
+	APIHash string `json:"api_hash"` // API Hash from my.telegram.org
 
 	// Accounts
 	Accounts []Account `json:"accounts"`
@@ -78,8 +71,6 @@ type Config struct {
 func Default() *Config {
 	return &Config{
 		LicenseKey:  "",
-		APIBaseURL:  "https://api.example.com",
-		APIKey:      "",
 		Theme:       "default",
 		Language:    "ru",
 		Timeout:     30,

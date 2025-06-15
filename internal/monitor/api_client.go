@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"stickersbot/internal/client"
+	"stickersbot/internal/constants"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ type APIClient struct {
 func NewAPIClient(httpClient *client.HTTPClient) *APIClient {
 	return &APIClient{
 		httpClient: httpClient,
-		baseURL:    "https://api.stickerdom.store/api/v1",
+		baseURL:    constants.TokenAPIURL,
 	}
 }
 

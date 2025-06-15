@@ -1,7 +1,5 @@
 {
   "license_key": "",
-  "api_base_url": "https://stickerdom.store",
-  "api_key": "",
   "theme": "default",
   "language": "ru",
   "timeout": 30,
@@ -12,13 +10,10 @@
   "test_address": "",
   "api_id": ,
   "api_hash": "",
-  "bot_username": "sticker_bot",
-  "web_app_url": "https://stickerdom.store",
-  "token_api_url": "https://api.stickerdom.store/api/v1",
   "accounts": [
     {
       "name": "Account 1 - Telegram Auth",
-      "auth_token": ".Rh4YFga0X_5ZmMW5B70AnI0RMQP1Koi67WlJFY3AfqQ",
+      "auth_token": "",
       "phone_number": "+",
       "seed_phrase": "",
       "threads": 1,

@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Auto Buy - Инструкция / Instructions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .lang-switcher {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .lang-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .lang-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .lang-btn.active {
+            background: #28a745;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .toc h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+        
+        .toc ul {
+            list-style: none;
+        }
+        
+        .toc li {
+            margin: 5px 0;
+        }
+        
+        .toc a {
+            color: #333;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .toc a:hover {
+            color: #007bff;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .section h3 {
+            color: #34495e;
+            margin: 20px 0 10px 0;
+        }
+        
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border: 1px solid #4b5563;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .emoji {
+            font-style: normal;
+            font-size: 1.2em;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 5px;
+        }
+        
+        .step-number {
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .code-block {
+                font-size: 14px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">🚀</span> Telegram Auto Buy</h1>
+            <p>Автоматическая покупка стикеров в Telegram / Automatic Telegram Stickers Purchase</p>
+        </div>
+        
+        <div class="lang-switcher">
+            <button class="lang-btn active" onclick="showLanguage('ru')">🇷🇺 Русский</button>
+            <button class="lang-btn" onclick="showLanguage('en')">🇺🇸 English</button>
+        </div>
+        
+        <!-- Russian Version -->
+        <div id="content-ru">
+            <div class="toc">
+                <h3><span class="emoji">📋</span> Содержание</h3>
+                <ul>
+                    <li><a href="#what-is-ru">🎯 Что это такое?</a></li>
+                    <li><a href="#quick-start-ru">🚀 Быстрый старт</a></li>
+                    <li><a href="#telegram-api-ru">🔑 Получение API ключей Telegram</a></li>
+                    <li><a href="#config-ru">⚙️ Настройка конфигурации</a></li>
+                    <li><a href="#modes-ru">🎯 Режимы работы</a></li>
+                    <li><a href="#run-ru">🏃‍♂️ Как запустить</a></li>
+                    <li><a href="#troubleshooting-ru">🆘 Решение проблем</a></li>
+                    <li><a href="#support-ru">📞 Поддержка</a></li>
+                </ul>
+            </div>
+            
+            <div class="section" id="what-is-ru">
+                <h2><span class="emoji">🎯</span> Что это такое?</h2>
+                <p>Telegram Auto Buy - это программа для автоматической покупки стикеров в Telegram. Программа может:</p>
+                <ul>
+                    <li><strong>Покупать стикеры автоматически</strong> - настраиваете один раз, программа работает сама</li>
+                    <li><strong>Работать с несколькими аккаунтами</strong> - можете добавить много Telegram аккаунтов</li>
+                    <li><strong>Отправлять TON платежи</strong> - автоматически оплачивает покупки криптовалютой TON</li>
+                    <li><strong>Отслеживать новые коллекции</strong> - находит новые стикеры и покупает их сразу (снайп режим)</li>
+                </ul>
+                
+                <div class="info">
+                    <strong><span class="emoji">📢</span> Будьте в курсе!</strong> Подписывайтесь на наш официальный канал <strong>@two_on_deck</strong> для получения последних обновлений, советов и лайфченджей!
+                </div>
+            </div>
+            
+            <div class="section" id="quick-start-ru">
+                <h2><span class="emoji">🚀</span> Быстрый старт</h2>
+                
+                <h3><span class="step-number">1</span>Скачайте программу</h3>
+                <ol>
+                    <li>Скачайте архив с программой (содержит <code>stickersbot.exe</code> и <code>config.json</code>)</li>
+                    <li>Распакуйте архив в любую папку на компьютере (например <code>TelegramMinter</code>)</li>
+                </ol>
+                
+                <h3><span class="step-number">2</span>Настройте файл конфигурации</h3>
+                <ol>
+                    <li>Откройте файл <code>config.json</code> в любом текстовом редакторе</li>
+                    <li>Заполните все необходимые поля по инструкции ниже</li>
+                </ol>
+            </div>
+            
+            <div class="section" id="telegram-api-ru">
+                <h2><span class="emoji">🔑</span> Получение API ключей Telegram</h2>
+                <h3>Как получить API ID и API Hash:</h3>
+                <ol>
+                    <li>Откройте <a href="https://my.telegram.org/auth" target="_blank">https://my.telegram.org/auth</a></li>
+                    <li>Войдите с помощью своего номера телефона</li>
+                    <li>Перейдите в "API development tools"</li>
+                    <li>Заполните форму:
+                        <ul>
+                            <li><strong>App title</strong>: любое название (например "MyBot")</li>
+                            <li><strong>Short name</strong>: короткое название (например "mybot")</li>
+                            <li><strong>URL</strong>: можете оставить пустым</li>
+                            <li><strong>Platform</strong>: выберите "Desktop"</li>
+                            <li><strong>Description</strong>: любое описание</li>
+                        </ul>
+                    </li>
+                    <li>Нажмите "Create application"</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> ВАЖНО:</strong> Скопируйте и сохраните:<br>
+                    • <strong>API ID</strong> (число, например: 1234567)<br>
+                    • <strong>API Hash</strong> (строка, например: "abcd1234efgh5678ijkl9012mnop3456")
+                </div>
+            </div>
+            
+            <div class="section" id="config-ru">
+                <h2><span class="emoji">⚙️</span> Настройка конфигурации</h2>
+                
+                <h3>Пустой шаблон config.json:</h3>
+                <div class="code-block">
+{
+  "license_key": "",
+  "api_id": 0,
+  "api_hash": "",
+  "test_mode": true,
+  "test_address": "",
+  "accounts": [
+    {
+      "name": "",
+      "phone_number": "",
+      "collection": 0,
+      "character": 0,
+      "currency": "TON",
+      "count": 1,
+      "threads": 1,
+      "max_transactions": 0,
+      "seed_phrase": "",
+      "snipe_monitor": {
+        "enabled": false,
+        "supply_range": {
+          "min": 10,
+          "max": 5000
+        },
+        "price_range": {
+          "min": 1000000000,
+          "max": 10000000000
+        },
+        "word_filter": ["keyword1", "keyword2"]
+      }
+    }
+  ]
+}
+                </div>
+                
+                <h3>Пример заполненного конфига:</h3>
+                <div class="code-block">
+{
+  "license_key": "YOUR_LICENSE_KEY_HERE",
+  "api_id": 1234567,
+  "api_hash": "abcd1234efgh5678ijkl9012mnop3456",
+  "test_mode": true,
+  "test_address": "UQD...",
+  "accounts": [
+    {
+      "name": "Мой основной аккаунт",
+      "phone_number": "+79123456789",
+      "collection": 123,
+      "character": 456,
+      "currency": "TON",
+      "count": 1,
+      "threads": 1,
+      "max_transactions": 10,
+      "seed_phrase": "word1 word2 word3 ... word24",
+      "snipe_monitor": {
+        "enabled": false,
+        "supply_range": {
+          "min": 10,
+          "max": 5000
+        },
+        "price_range": {
+          "min": 1000000000,
+          "max": 10000000000
+        },
+        "word_filter": ["azuki", "pokemon", "cryptopunks"]
+      }
+    }
+  ]
+}
+                </div>
+                
+                <h3>Описание основных настроек:</h3>
+                <table>
+                    <tr>
+                        <th>Параметр</th>
+                        <th>Описание</th>
+                    </tr>
+                    <tr>
+                        <td><code>license_key</code></td>
+                        <td>Лицензионный ключ программы (получите у разработчиков)</td>
+                    </tr>
+                    <tr>
+                        <td><code>api_id</code></td>
+                        <td>ID вашего Telegram приложения</td>
+                    </tr>
+                    <tr>
+                        <td><code>api_hash</code></td>
+                        <td>Hash вашего Telegram приложения</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_mode</code></td>
+                        <td>Тестовый режим (true = тест, false = реальные покупки)</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_address</code></td>
+                        <td>Адрес кошелька для тестовых платежей</td>
+                    </tr>
+                </table>
+                
+                <h3>Настройки аккаунта:</h3>
+                <table>
+                    <tr>
+                        <th>Параметр</th>
+                        <th>Описание</th>
+                    </tr>
+                    <tr>
+                        <td><code>name</code></td>
+                        <td>Любое название для аккаунта (для удобства)</td>
+                    </tr>
+                    <tr>
+                        <td><code>phone_number</code></td>
+                        <td>Номер телефона Telegram аккаунта (с кодом страны)</td>
+                    </tr>
+                    <tr>
+                        <td><code>collection</code></td>
+                        <td>ID коллекции стикеров для покупки</td>
+                    </tr>
+                    <tr>
+                        <td><code>character</code></td>
+                        <td>ID персонажа в коллекции</td>
+                    </tr>
+                    <tr>
+                        <td><code>currency</code></td>
+                        <td>Валюта для покупки ("TON")</td>
+                    </tr>
+                    <tr>
+                        <td><code>count</code></td>
+                        <td>Количество стикеров для покупки за раз</td>
+                    </tr>
+                    <tr>
+                        <td><code>threads</code></td>
+                        <td>Количество потоков (рекомендуется 1-3)</td>
+                    </tr>
+                    <tr>
+                        <td><code>max_transactions</code></td>
+                        <td>Максимум транзакций (0 = без лимита)</td>
+                    </tr>
+                    <tr>
+                        <td><code>seed_phrase</code></td>
+                        <td>Seed фраза TON кошелька (12-24 слова через пробел)</td>
+                    </tr>
+                    <tr>
+                        <td><code>snipe_monitor</code></td>
+                        <td>Настройки снайп мониторинга (опционально)</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="section" id="modes-ru">
+                <h2><span class="emoji">🎯</span> Режимы работы программы</h2>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> ВАЖНО:</strong> Программа имеет два принципиально разных режима работы в зависимости от настройки <code>snipe_monitor</code>!
+                </div>
+                
+                <h3><span class="emoji">🔍</span> Режим снайп мониторинга (snipe_monitor enabled: true)</h3>
+                <div class="info">
+                    <strong>Как работает:</strong>
+                    <ul>
+                        <li>Программа <strong>ждет появления НОВЫХ коллекций</strong> на платформе</li>
+                        <li>Когда появляется новая коллекция, соответствующая вашим критериям, программа <strong>автоматически покупает ее</strong></li>
+                        <li>Параметры <code>collection</code> и <code>character</code> в конфиге <strong>ИГНОРИРУЮТСЯ</strong></li>
+                        <li>Программа работает в режиме <strong>постоянного мониторинга</strong></li>
+                    </ul>
+                </div>
+                
+                <h4>Пример конфига с включенным снайп мониторингом:</h4>
+                <div class="code-block">
+{
+  "name": "Снайпер аккаунт",
+  "phone_number": "+79123456789",
+  "collection": 0,  // ← Игнорируется в этом режиме
+  "character": 0,   // ← Игнорируется в этом режиме
+  "currency": "TON",
+  "count": 1,
+  "threads": 1,
+  "max_transactions": 5,
+  "seed_phrase": "your seed phrase here",
+  "snipe_monitor": {
+    "enabled": true,  // ← ВКЛЮЧЕН снайп режим
+    "supply_range": {
+      "min": 100,
+      "max": 10000
+    },
+    "price_range": {
+      "min": 500000000,
+      "max": 5000000000
+    },
+    "word_filter": ["rare", "limited", "exclusive"]
+  }
+}
+                </div>
+                
+                <h3><span class="emoji">🎯</span> Режим прямой покупки (snipe_monitor enabled: false или отсутствует)</h3>
+                <div class="success">
+                    <strong>Как работает:</strong>
+                    <ul>
+                        <li>Программа <strong>сразу покупает</strong> указанные в конфиге <code>collection</code> и <code>character</code></li>
+                        <li>Никакого мониторинга - <strong>прямое действие</strong></li>
+                        <li>Параметры <code>collection</code> и <code>character</code> <strong>ОБЯЗАТЕЛЬНЫ</strong></li>
+                        <li>Идеально когда вы <strong>точно знаете</strong> что хотите купить</li>
+                    </ul>
+                </div>
+                
+                <h4>Пример конфига с прямой покупкой:</h4>
+                <div class="code-block">
+{
+  "name": "Целевая покупка",
+  "phone_number": "+79123456789",
+  "collection": 123,  // ← ОБЯЗАТЕЛЬНО указать ID коллекции
+  "character": 456,   // ← ОБЯЗАТЕЛЬНО указать ID персонажа
+  "currency": "TON",
+  "count": 1,
+  "threads": 1,
+  "max_transactions": 1,
+  "seed_phrase": "your seed phrase here",
+  "snipe_monitor": {
+    "enabled": false  // ← ВЫКЛЮЧЕН снайп режим
+  }
+}
+                </div>
+                
+                <h3><span class="emoji">⚙️</span> Настройки снайп мониторинга</h3>
+                <table>
+                    <tr>
+                        <th>Параметр</th>
+                        <th>Описание</th>
+                    </tr>
+                    <tr>
+                        <td><code>enabled</code></td>
+                        <td><strong>true</strong> = снайп режим, <strong>false</strong> = прямая покупка</td>
+                    </tr>
+                    <tr>
+                        <td><code>supply_range</code></td>
+                        <td>Диапазон количества NFT в коллекции (min-max)</td>
+                    </tr>
+                    <tr>
+                        <td><code>price_range</code></td>
+                        <td>Диапазон цены в нанотонах (1 TON = 1000000000 нанотон)</td>
+                    </tr>
+                    <tr>
+                        <td><code>word_filter</code></td>
+                        <td>Список ключевых слов для поиска в названии коллекции</td>
+                    </tr>
+                </table>
+                
+                <div class="highlight">
+                    <strong><span class="emoji">💡</span> Совет:</strong> Можете создать несколько аккаунтов с разными режимами - одни для снайпинга, другие для целевых покупок!
+                </div>
+            </div>
+        </div>
+        
+        <!-- English Version -->
+        <div id="content-en" class="hidden">
+            <div class="toc">
+                <h3><span class="emoji">📋</span> Table of Contents</h3>
+                <ul>
+                    <li><a href="#what-is-en">🎯 What is this?</a></li>
+                    <li><a href="#quick-start-en">🚀 Quick Start</a></li>
+                    <li><a href="#telegram-api-en">🔑 Getting Telegram API Keys</a></li>
+                    <li><a href="#config-en">⚙️ Configuration Setup</a></li>
+                    <li><a href="#modes-en">🎯 Operating Modes</a></li>
+                    <li><a href="#run-en">🏃‍♂️ How to Run</a></li>
+                    <li><a href="#troubleshooting-en">🆘 Troubleshooting</a></li>
+                    <li><a href="#support-en">📞 Support</a></li>
+                </ul>
+            </div>
+            
+            <div class="section" id="what-is-en">
+                <h2><span class="emoji">🎯</span> What is this?</h2>
+                <p>Telegram Auto Buy is a program for automatic stickers purchasing in Telegram. The program can:</p>
+                <ul>
+                    <li><strong>Buy stickers automatically</strong> - set it up once, the program works by itself</li>
+                    <li><strong>Work with multiple accounts</strong> - you can add many Telegram accounts</li>
+                    <li><strong>Send TON payments</strong> - automatically pays for purchases with TON cryptocurrency</li>
+                    <li><strong>Track new collections</strong> - finds new stickers and buys them immediately (snipe mode)</li>
+                </ul>
+                
+                <div class="info">
+                    <strong><span class="emoji">📢</span> Stay updated!</strong> Join our official channel <strong>@two_on_deck</strong> for latest updates, tips and life-changing opportunities!
+                </div>
+            </div>
+            
+            <div class="section" id="quick-start-en">
+                <h2><span class="emoji">🚀</span> Quick Start</h2>
+                
+                <h3><span class="step-number">1</span>Download the program</h3>
+                <ol>
+                    <li>Download the program archive (contains <code>stickersbot.exe</code> and <code>config.json</code>)</li>
+                    <li>Extract the archive to any folder on your computer (e.g., <code>TelegramMinter</code>)</li>
+                </ol>
+                
+                <h3><span class="step-number">2</span>Configure the configuration file</h3>
+                <ol>
+                    <li>Open the <code>config.json</code> file in any text editor</li>
+                    <li>Fill in all necessary fields according to the instructions below</li>
+                </ol>
+            </div>
+            
+            <div class="section" id="telegram-api-en">
+                <h2><span class="emoji">🔑</span> Getting Telegram API Keys</h2>
+                <h3>How to get API ID and API Hash:</h3>
+                <ol>
+                    <li>Open <a href="https://my.telegram.org/auth" target="_blank">https://my.telegram.org/auth</a></li>
+                    <li>Log in with your phone number</li>
+                    <li>Go to "API development tools"</li>
+                    <li>Fill out the form:
+                        <ul>
+                            <li><strong>App title</strong>: any name (e.g., "MyBot")</li>
+                            <li><strong>Short name</strong>: short name (e.g., "mybot")</li>
+                            <li><strong>URL</strong>: can be left empty</li>
+                            <li><strong>Platform</strong>: select "Desktop"</li>
+                            <li><strong>Description</strong>: any description</li>
+                        </ul>
+                    </li>
+                    <li>Click "Create application"</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> IMPORTANT:</strong> Copy and save:<br>
+                    • <strong>API ID</strong> (number, e.g., 1234567)<br>
+                    • <strong>API Hash</strong> (string, e.g., "abcd1234efgh5678ijkl9012mnop3456")
+                </div>
+            </div>
+            
+            <div class="section" id="config-en">
+                <h2><span class="emoji">⚙️</span> Configuration Setup</h2>
+                
+                <h3>Empty config.json template:</h3>
+                <div class="code-block">
+{
+  "license_key": "",
+  "api_id": 0,
+  "api_hash": "",
+  "test_mode": true,
+  "test_address": "",
+  "accounts": [
+    {
+      "name": "",
+      "phone_number": "",
+      "collection": 0,
+      "character": 0,
+      "currency": "TON",
+      "count": 1,
+      "threads": 1,
+      "max_transactions": 0,
+      "seed_phrase": "",
+      "snipe_monitor": {
+        "enabled": false,
+        "supply_range": {
+          "min": 10,
+          "max": 5000
+        },
+        "price_range": {
+          "min": 1000000000,
+          "max": 10000000000
+        },
+        "word_filter": ["keyword1", "keyword2"]
+      }
+    }
+  ]
+}
+                </div>
+                
+                <h3>Example of filled config:</h3>
+                <div class="code-block">
+{
+  "license_key": "YOUR_LICENSE_KEY_HERE",
+  "api_id": 1234567,
+  "api_hash": "abcd1234efgh5678ijkl9012mnop3456",
+  "test_mode": true,
+  "test_address": "UQD...",
+  "accounts": [
+    {
+      "name": "My Main Account",
+      "phone_number": "+1234567890",
+      "collection": 123,
+      "character": 456,
+      "currency": "TON",
+      "count": 1,
+      "threads": 1,
+      "max_transactions": 10,
+      "seed_phrase": "word1 word2 word3 ... word24",
+      "snipe_monitor": {
+        "enabled": false,
+        "supply_range": {
+          "min": 10,
+          "max": 5000
+        },
+        "price_range": {
+          "min": 1000000000,
+          "max": 10000000000
+        },
+        "word_filter": ["azuki", "pokemon", "cryptopunks"]
+      }
+    }
+  ]
+}
+                </div>
+                
+                <h3>Main settings description:</h3>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>license_key</code></td>
+                        <td>Program license key (obtain from developers)</td>
+                    </tr>
+                    <tr>
+                        <td><code>api_id</code></td>
+                        <td>Your Telegram application ID</td>
+                    </tr>
+                    <tr>
+                        <td><code>api_hash</code></td>
+                        <td>Your Telegram application hash</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_mode</code></td>
+                        <td>Test mode (true = test, false = real purchases)</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_address</code></td>
+                        <td>Wallet address for test payments</td>
+                    </tr>
+                </table>
+                
+                <h3>Account settings:</h3>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>name</code></td>
+                        <td>Any name for the account (for convenience)</td>
+                    </tr>
+                    <tr>
+                        <td><code>phone_number</code></td>
+                        <td>Telegram account phone number (with country code)</td>
+                    </tr>
+                    <tr>
+                        <td><code>collection</code></td>
+                        <td>Sticker collection ID for purchase</td>
+                    </tr>
+                    <tr>
+                        <td><code>character</code></td>
+                        <td>Character ID in the collection</td>
+                    </tr>
+                    <tr>
+                        <td><code>currency</code></td>
+                        <td>Currency for purchase ("TON")</td>
+                    </tr>
+                    <tr>
+                        <td><code>count</code></td>
+                        <td>Number of stickers to buy at once</td>
+                    </tr>
+                    <tr>
+                        <td><code>threads</code></td>
+                        <td>Number of threads (recommended 1-3)</td>
+                    </tr>
+                    <tr>
+                        <td><code>max_transactions</code></td>
+                        <td>Maximum transactions (0 = no limit)</td>
+                    </tr>
+                    <tr>
+                        <td><code>seed_phrase</code></td>
+                        <td>TON wallet seed phrase (12-24 words separated by spaces)</td>
+                    </tr>
+                    <tr>
+                        <td><code>snipe_monitor</code></td>
+                        <td>Snipe monitoring settings (optional)</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="section" id="modes-en">
+                <h2><span class="emoji">🎯</span> Operating Modes</h2>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> IMPORTANT:</strong> The program has two fundamentally different operating modes depending on the <code>snipe_monitor</code> setting!
+                </div>
+                
+                <h3><span class="emoji">🔍</span> Snipe Monitoring Mode (snipe_monitor enabled: true)</h3>
+                <div class="info">
+                    <strong>How it works:</strong>
+                    <ul>
+                        <li>The program <strong>waits for NEW collections</strong> to appear on the platform</li>
+                        <li>When a new collection appears that matches your criteria, the program <strong>automatically buys it</strong></li>
+                        <li>The <code>collection</code> and <code>character</code> parameters in the config are <strong>IGNORED</strong></li>
+                        <li>The program works in <strong>constant monitoring</strong> mode</li>
+                    </ul>
+                </div>
+                
+                <h4>Example config with snipe monitoring enabled:</h4>
+                <div class="code-block">
+{
+  "name": "Sniper Account",
+  "phone_number": "+1234567890",
+  "collection": 0,  // ← Ignored in this mode
+  "character": 0,   // ← Ignored in this mode
+  "currency": "TON",
+  "count": 1,
+  "threads": 1,
+  "max_transactions": 5,
+  "seed_phrase": "your seed phrase here",
+  "snipe_monitor": {
+    "enabled": true,  // ← SNIPE MODE ENABLED
+    "supply_range": {
+      "min": 100,
+      "max": 10000
+    },
+    "price_range": {
+      "min": 500000000,
+      "max": 5000000000
+    },
+    "word_filter": ["rare", "limited", "exclusive"]
+  }
+}
+                </div>
+                
+                <h3><span class="emoji">🎯</span> Direct Purchase Mode (snipe_monitor enabled: false or absent)</h3>
+                <div class="success">
+                    <strong>How it works:</strong>
+                    <ul>
+                        <li>The program <strong>immediately buys</strong> the specified <code>collection</code> and <code>character</code> from the config</li>
+                        <li>No monitoring - <strong>direct action</strong></li>
+                        <li>The <code>collection</code> and <code>character</code> parameters are <strong>REQUIRED</strong></li>
+                        <li>Perfect when you <strong>know exactly</strong> what you want to buy</li>
+                    </ul>
+                </div>
+                
+                <h4>Example config with direct purchase:</h4>
+                <div class="code-block">
+{
+  "name": "Direct Purchase",
+  "phone_number": "+1234567890",
+  "collection": 123,  // ← REQUIRED collection ID
+  "character": 456,   // ← REQUIRED character ID
+  "currency": "TON",
+  "count": 1,
+  "threads": 1,
+  "max_transactions": 1,
+  "seed_phrase": "your seed phrase here",
+  "snipe_monitor": {
+    "enabled": false  // ← SNIPE MODE DISABLED
+  }
+}
+                </div>
+                
+                <h3><span class="emoji">⚙️</span> Snipe Monitor Settings</h3>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>enabled</code></td>
+                        <td><strong>true</strong> = snipe mode, <strong>false</strong> = direct purchase</td>
+                    </tr>
+                    <tr>
+                        <td><code>supply_range</code></td>
+                        <td>Range of NFT count in collection (min-max)</td>
+                    </tr>
+                    <tr>
+                        <td><code>price_range</code></td>
+                        <td>Price range in nanotons (1 TON = 1000000000 nanotons)</td>
+                    </tr>
+                    <tr>
+                        <td><code>word_filter</code></td>
+                        <td>List of keywords to search for in collection names</td>
+                    </tr>
+                </table>
+                
+                <div class="highlight">
+                    <strong><span class="emoji">💡</span> Tip:</strong> You can create multiple accounts with different modes - some for sniping, others for targeted purchases!
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showLanguage(lang) {
+            // Hide all content
+            document.getElementById('content-ru').classList.add('hidden');
+            document.getElementById('content-en').classList.add('hidden');
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected content and activate button
+            document.getElementById('content-' + lang).classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+        
+        // Smooth scrolling for anchor links
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
