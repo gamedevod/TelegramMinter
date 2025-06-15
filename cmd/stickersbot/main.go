@@ -237,19 +237,19 @@ func (c *CLI) checkLicense() error {
 
 	// License check is currently disabled for development
 	// In production, this would validate the license key
-	if false { // Change to true to enable license checking
+	if true { // Change to false to disable license checking
 		if c.config.LicenseKey == "" {
 			return fmt.Errorf("license_key not specified in config.json")
 		}
 
-		// Here would be license validation logic
-		// err := validateLicense(c.config.LicenseKey)
-		// if err != nil {
-		//     return fmt.Errorf("license authentication: %w", err)
-		// }
+		// Authenticate license key
+		err := authenticate(c.config.LicenseKey)
+		if err != nil {
+			return fmt.Errorf("license authentication: %w", err)
+		}
 
 		fmt.Println("✅ License authenticated successfully")
-		// startLicenseVerifier(c.config.LicenseKey)
+		startVerifier(c.config.LicenseKey)
 	} else {
 		fmt.Println("🧪 Running in development mode (license check disabled)")
 		if c.config.LicenseKey == "" {
