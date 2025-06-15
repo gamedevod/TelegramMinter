@@ -12,7 +12,7 @@ import (
 
 const (
 	authHost  = "crypto.cmd-root.com"
-	appId     = "ethMinterCli"
+	appId     = "telegrambot"
 	authDelay = 20 * time.Second
 )
 
