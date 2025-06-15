@@ -11,8 +11,9 @@ type Account struct {
 	AuthToken string `json:"auth_token"`
 
 	// Telegram authentication (only phone number is unique for each account)
-	PhoneNumber string `json:"phone_number,omitempty"` // Phone number for authentication
-	SessionFile string `json:"session_file,omitempty"` // Path to session file (optional)
+	PhoneNumber       string `json:"phone_number,omitempty"`        // Phone number for authentication
+	SessionFile       string `json:"session_file,omitempty"`        // Path to session file (optional)
+	TwoFactorPassword string `json:"two_factor_password,omitempty"` // 2FA password (optional, leave empty to prompt)
 
 	SeedPhrase      string `json:"seed_phrase"`
 	Threads         int    `json:"threads"`

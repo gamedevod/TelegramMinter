@@ -20,20 +20,22 @@ import (
 
 // AuthService structure for Telegram authorization
 type AuthService struct {
-	APIId       int
-	APIHash     string
-	PhoneNumber string
-	SessionFile string
-	client      *telegram.Client
+	APIId             int
+	APIHash           string
+	PhoneNumber       string
+	SessionFile       string
+	TwoFactorPassword string // 2FA password, if empty - will prompt user
+	client            *telegram.Client
 }
 
 // NewAuthService creates a new authorization service
-func NewAuthService(apiId int, apiHash, phoneNumber, sessionFile string) *AuthService {
+func NewAuthService(apiId int, apiHash, phoneNumber, sessionFile, twoFactorPassword string) *AuthService {
 	return &AuthService{
-		APIId:       apiId,
-		APIHash:     apiHash,
-		PhoneNumber: phoneNumber,
-		SessionFile: sessionFile,
+		APIId:             apiId,
+		APIHash:           apiHash,
+		PhoneNumber:       phoneNumber,
+		SessionFile:       sessionFile,
+		TwoFactorPassword: twoFactorPassword,
 	}
 }
 
@@ -89,16 +91,48 @@ func (a *AuthService) AuthorizeAndGetToken(ctx context.Context) (string, error) 
 
 // performAuth performs authorization by phone number
 func (a *AuthService) performAuth(ctx context.Context) error {
+	// Create custom authenticator that handles 2FA properly
+	authenticator := &customAuthenticator{
+		phoneNumber:       a.PhoneNumber,
+		twoFactorPassword: a.TwoFactorPassword,
+		authService:       a,
+	}
+
 	flow := auth.NewFlow(
-		auth.Constant(
-			a.PhoneNumber,
-			"", // leave password empty
-			auth.CodeAuthenticatorFunc(a.codePrompt),
-		),
+		authenticator,
 		auth.SendCodeOptions{},
 	)
 
 	return a.client.Auth().IfNecessary(ctx, flow)
+}
+
+// customAuthenticator implements auth.UserAuthenticator with proper 2FA support
+type customAuthenticator struct {
+	phoneNumber       string
+	twoFactorPassword string
+	authService       *AuthService
+}
+
+func (c *customAuthenticator) Phone(ctx context.Context) (string, error) {
+	return c.phoneNumber, nil
+}
+
+func (c *customAuthenticator) Password(ctx context.Context) (string, error) {
+	return c.authService.passwordPrompt(ctx)
+}
+
+func (c *customAuthenticator) Code(ctx context.Context, sentCode *tg.AuthSentCode) (string, error) {
+	return c.authService.codePrompt(ctx, sentCode)
+}
+
+func (c *customAuthenticator) AcceptTermsOfService(ctx context.Context, tos tg.HelpTermsOfService) error {
+	// Auto-accept terms of service
+	return nil
+}
+
+func (c *customAuthenticator) SignUp(ctx context.Context) (auth.UserInfo, error) {
+	// Return empty user info - we don't support sign up
+	return auth.UserInfo{}, fmt.Errorf("sign up not supported")
 }
 
 // codePrompt requests confirmation code from user
@@ -113,6 +147,32 @@ func (a *AuthService) codePrompt(ctx context.Context, sentCode *tg.AuthSentCode)
 	}
 
 	return strings.TrimSpace(code), nil
+}
+
+// passwordPrompt requests 2FA password from user (used as fallback if config password fails)
+func (a *AuthService) passwordPrompt(ctx context.Context) (string, error) {
+	fmt.Printf("🔐 Two-factor authentication required for number: %s\n", a.PhoneNumber)
+
+	// If password is provided in config, try it first
+	if a.TwoFactorPassword != "" {
+		log.Printf("📋 Using 2FA password from config")
+		return a.TwoFactorPassword, nil
+	}
+
+	// Otherwise, prompt user
+	fmt.Print("Enter your 2FA password: ")
+	reader := bufio.NewReader(os.Stdin)
+	password, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("error reading password: %w", err)
+	}
+
+	password = strings.TrimSpace(password)
+	if password == "" {
+		return "", fmt.Errorf("password cannot be empty")
+	}
+
+	return password, nil
 }
 
 // getBearerToken gets Bearer token for Web App
@@ -155,6 +215,7 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 	webAppURL := constants.WebAppURL
 
 	log.Printf("🔧 Using bot: %s, Web App: %s", botUsername, webAppURL)
+	log.Printf("🔧 User ID: %d, Username: @%s", user.ID, user.Username)
 
 	// 1. Get auth data (analog of get_auth_data from Python)
 	log.Printf("🔄 Getting auth data for bot %s...", botUsername)
@@ -166,6 +227,7 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 		return a.fallbackToTempToken(user.ID)
 	}
 
+	log.Printf("🔍 Auth response status: %s", authResponse.Status)
 	if authResponse.Status != "SUCCESS" {
 		log.Printf("❌ Failed to get auth data: %s", authResponse.Description)
 		log.Printf("🔄 Switching to fallback token...")
@@ -176,13 +238,16 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 
 	authData, ok := authResponse.Data.(*client.AuthData)
 	if !ok {
-		log.Printf("⚠️  Invalid auth data format")
+		log.Printf("⚠️  Invalid auth data format, type: %T", authResponse.Data)
 		return a.fallbackToTempToken(user.ID)
 	}
 
+	log.Printf("🔍 Auth data: Data length=%d, Expires=%s", len(authData.Data), authData.Exp.Format("15:04:05"))
+
 	// Check that auth data is valid
 	if !authData.IsValid() {
-		log.Printf("⚠️  Auth data expired")
+		log.Printf("⚠️  Auth data expired (current time: %s, expires: %s)",
+			time.Now().Format("15:04:05"), authData.Exp.Format("15:04:05"))
 		return a.fallbackToTempToken(user.ID)
 	}
 
@@ -202,13 +267,22 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 		return a.fallbackToTempToken(user.ID)
 	}
 
+	log.Printf("🔍 Token response status: %s", tokenResponse.Status)
 	if tokenResponse.Status == "SUCCESS" {
-		bearerToken := tokenResponse.Data.(string)
+		bearerToken, ok := tokenResponse.Data.(string)
+		if !ok {
+			log.Printf("❌ Invalid token format, type: %T", tokenResponse.Data)
+			log.Printf("🔄 Switching to fallback token...")
+			return a.fallbackToTempToken(user.ID)
+		}
 		log.Printf("✅ Bearer token obtained through API: %s", maskToken(bearerToken))
 		return bearerToken, nil
 	}
 
 	log.Printf("❌ API authentication failed: %s", tokenResponse.Description)
+	if tokenResponse.Data != nil {
+		log.Printf("🔍 Additional error data: %v", tokenResponse.Data)
+	}
 	log.Printf("🔄 Switching to fallback token...")
 	return a.fallbackToTempToken(user.ID)
 }

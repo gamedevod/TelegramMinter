@@ -195,6 +195,7 @@ func (tm *TokenManager) refreshTokenViaTelegram(account *config.Account) (string
 		tm.config.APIHash,
 		account.PhoneNumber,
 		sessionFile,
+		account.TwoFactorPassword,
 	)
 
 	// Execute authentication with timeout
