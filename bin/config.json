@@ -1,5 +1,5 @@
 {
-  "license_key": "",
+  "license_key": "9864CF12E2A2522253BF",
   "theme": "default",
   "language": "ru",
   "timeout": 30,
@@ -7,15 +7,15 @@
   "use_proxy": false,
   "proxy_url": "",
   "test_mode": true,
-  "test_address": "",
-  "api_id": ,
-  "api_hash": "",
+  "test_address": "UQD06XNOAQw5ZYSINOfzuMLTQnBO8SX4ae05XqMmS9ikjP4N",
+  "api_id": 25164991,
+  "api_hash": "96d62a73e5087e4bbfbbe6b5dc58042c",
   "accounts": [
     {
       "name": "Account 1 - Telegram Auth",
       "auth_token": "",
-      "phone_number": "+",
-      "seed_phrase": "",
+      "phone_number": "+4915510400651",
+      "seed_phrase": "area pepper trumpet foster seven genre rotate dad captain parrot flash coyote warrior little donkey year board private dust entry lend jump jewel access",
       "threads": 1,
       "collection": 1,
       "character": 70,
@@ -23,7 +23,7 @@
       "count": 1,
       "max_transactions": 1,
       "snipe_monitor": {
-        "enabled": false,
+        "enabled": true,
         "supply_range": {
           "min": 10,
           "max": 5000
