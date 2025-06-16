@@ -32,7 +32,8 @@
 ║  🌊 "Two minds, one mission - sailing the crypto seas!"                     ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
-```
+
+> ⚠️ **IMPORTANT FOR NEW USERS:** If you're using a new/zero balance TON wallet, make sure to use menu option **"5. 🔧 Check/Deploy wallets"** before first run! Fresh wallets need to be deployed in TON blockchain to work with transactions.
 
 ## 🎯 What is this?
 
@@ -84,6 +85,12 @@ Currently, the program uses **V4R2** address type. If you want to use this walle
 3. Find **"Current Address"** option
 4. Select **V4R2** address
 5. Open the V4R2 wallet type and fund exactly this one
+
+**🚀 New Wallet Deployment:**
+- **New/zero balance wallets** require deployment in TON blockchain before use
+- **Use menu "5. 🔧 Check/Deploy wallets"** for automatic deployment
+- **Minimum balance:** Need at least 0.05 TON for deployment
+- **Deployment cost:** About 0.01-0.02 TON for gas
 
 > 📝 **Note:** Future updates will include W5 address support for better compatibility.
 
@@ -365,16 +372,52 @@ After launching the program, you will see an interactive CLI menu with 5 main op
 - Indicates any wallet-related errors
 - Helps verify sufficient funds before purchasing
 
-**Information displayed:**
+**Displayed information:**
 - **Account Name:** Your configured account name
 - **Phone Number:** Masked phone number for security
 - **Wallet Address:** TON wallet address
 - **Balance:** Current TON balance
 - **Errors:** Any wallet-related issues
 
-> 💡 **Tip:** Check balances regularly to ensure you have enough TON for purchases!
+> 💡 **Tip:** Regularly check balances to ensure you have enough TON for purchases!
 
-### 🚪 5. Exit
+### 🔧 5. Check/Deploy Wallets
+
+**What it does:**
+- Checks all seed phrases from account configuration
+- Determines if wallets are deployed in TON blockchain
+- Automatically deploys undeployed wallets when funds are available
+- Shows detailed information about each wallet's state
+
+**Checking process:**
+1. **Seed phrase validation:** Checks format (12 or 24 words)
+2. **Address retrieval:** Shows wallet address for each account
+3. **Balance checking:** Displays current TON balance
+4. **Deployment test:** Attempts test transaction to verify deployment
+5. **Status determination:** Shows if deployment is needed
+
+**Wallet statuses:**
+- ✅ **Deployed** - Wallet is ready for use
+- ⚠️ **Needs deployment** - Wallet not deployed but has funds (≥ 0.05 TON)
+- ❌ **Insufficient funds** - Need to fund wallet for deployment
+
+**Deployment options:**
+1. **Selective deployment:** Choose specific wallets by numbers
+2. **Deploy all:** Automatically deploy all undeployed wallets
+3. **Refresh status:** Recheck all wallet states
+4. **Back to menu:** Cancel operation
+
+**Deployment process:**
+- Sends 0.001 TON transaction to self to activate contract
+- Waits for TON network confirmation (up to 60 seconds)
+- Shows deployment result for each wallet
+- Provides transaction IDs for tracking
+
+> ⚠️ **Important:** Wallet deployment requires minimum 0.05 TON balance. Operation consumes about 0.01-0.02 TON for gas.
+
+> 💡 **Tip:** Use this menu item before first purchase run to ensure all wallets are ready!
+
+### 🚪 6. Exit
 
 **What it does:**
 - Safely closes the application

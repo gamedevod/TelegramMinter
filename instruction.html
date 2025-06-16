@@ -244,6 +244,12 @@
             <p>Автоматическая покупка стикеров в Telegram / Automatic Telegram Stickers Purchase</p>
         </div>
         
+        <div class="warning" style="margin-bottom: 30px;">
+            <strong><span class="emoji">⚠️</span> ВАЖНО ДЛЯ НОВЫХ ПОЛЬЗОВАТЕЛЕЙ / IMPORTANT FOR NEW USERS:</strong><br><br>
+            🇷🇺 Если вы используете новый/нулевой TON кошелек, обязательно воспользуйтесь пунктом меню <strong>"5. 🔧 Check/Deploy wallets"</strong> перед первым запуском! Свежие кошельки нужно развернуть в блокчейне TON для работы с транзакциями.<br><br>
+            🇺🇸 If you're using a new/zero balance TON wallet, make sure to use menu option <strong>"5. 🔧 Check/Deploy wallets"</strong> before first run! Fresh wallets need to be deployed in TON blockchain to work with transactions.
+        </div>
+        
         <div class="lang-switcher">
             <button class="lang-btn active" onclick="showLanguage('ru')">🇷🇺 Русский</button>
             <button class="lang-btn" onclick="showLanguage('en')">🇺🇸 English</button>
@@ -332,6 +338,11 @@
                     3. Найдите пункт <strong>"Текущий адрес"</strong><br>
                     4. Выберите адрес <strong>V4R2</strong><br>
                     5. Откройте кошелек типа V4R2 и пополняйте именно его<br><br>
+                    <strong><span class="emoji">🚀</span> Развертывание новых кошельков:</strong><br>
+                    • <strong>Новые/нулевые кошельки</strong> требуют развертывания в блокчейне TON перед использованием<br>
+                    • <strong>Используйте меню "5. 🔧 Check/Deploy wallets"</strong> для автоматического развертывания<br>
+                    • <strong>Минимальный баланс:</strong> Нужно не менее 0.05 TON для развертывания<br>
+                    • <strong>Стоимость развертывания:</strong> Около 0.01-0.02 TON на газ<br><br>
                     <span class="emoji">📝</span> <strong>Примечание:</strong> В будущих обновлениях будет добавлена поддержка W5 адресов для большей совместимости.
                 </div>
                 
@@ -706,7 +717,63 @@
                     <strong><span class="emoji">💡</span> Совет:</strong> Регулярно проверяйте балансы, чтобы убедиться, что у вас достаточно TON для покупок!
                 </div>
                 
-                <h3><span class="emoji">🚪</span> 5. Выход</h3>
+                <h3><span class="emoji">🔧</span> 5. Проверка/Развертывание кошельков</h3>
+                <div class="highlight">
+                    <strong>Что делает:</strong>
+                    <ul>
+                        <li>Проверяет все seed фразы из конфигурации аккаунтов</li>
+                        <li>Определяет, развернуты ли кошельки в блокчейне TON</li>
+                        <li>Автоматически развертывает неразвернутые кошельки при наличии средств</li>
+                        <li>Показывает детальную информацию о состоянии каждого кошелька</li>
+                    </ul>
+                </div>
+                
+                <h4>Процесс проверки:</h4>
+                <ol>
+                    <li><strong>Валидация seed фраз:</strong> Проверяет формат (12 или 24 слова)</li>
+                    <li><strong>Получение адресов:</strong> Показывает адрес кошелька для каждого аккаунта</li>
+                    <li><strong>Проверка балансов:</strong> Отображает текущий баланс TON</li>
+                    <li><strong>Тест развертывания:</strong> Пытается выполнить тестовую транзакцию для проверки</li>
+                    <li><strong>Определение статуса:</strong> Показывает нужно ли развертывание</li>
+                </ol>
+                
+                <h4>Статусы кошельков:</h4>
+                <table>
+                    <tr>
+                        <th>Статус</th>
+                        <th>Описание</th>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">✅</span> Развернут</td>
+                        <td>Кошелек готов к использованию</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">⚠️</span> Требует развертывания</td>
+                        <td>Кошелек не развернут, но есть средства (≥ 0.05 TON)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">❌</span> Недостаточно средств</td>
+                        <td>Нужно пополнить кошелек для развертывания</td>
+                    </tr>
+                </table>
+                
+                <h4>Опции развертывания:</h4>
+                <ol>
+                    <li><strong>Выборочное развертывание:</strong> Выберите конкретные кошельки по номерам</li>
+                    <li><strong>Развернуть все:</strong> Автоматически развернуть все неразвернутые кошельки</li>
+                    <li><strong>Обновить статус:</strong> Перепроверить состояние всех кошельков</li>
+                    <li><strong>Вернуться в меню:</strong> Отменить операцию</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> Важно:</strong> Развертывание кошелька требует минимум 0.05 TON на балансе. Операция потребляет около 0.01-0.02 TON на газ.
+                </div>
+                
+                <div class="info">
+                    <strong><span class="emoji">💡</span> Совет:</strong> Используйте этот пункт меню перед первым запуском покупок, чтобы убедиться что все кошельки готовы к работе!
+                </div>
+                
+                <h3><span class="emoji">🚪</span> 6. Выход</h3>
                 <div class="info">
                     <strong>Что делает:</strong>
                     <ul>
@@ -870,6 +937,11 @@
                     3. Find <strong>"Current Address"</strong> option<br>
                     4. Select <strong>V4R2</strong> address<br>
                     5. Open the V4R2 wallet type and fund exactly this one<br><br>
+                    <strong><span class="emoji">🚀</span> New Wallet Deployment:</strong><br>
+                    • <strong>New/zero balance wallets</strong> require deployment in TON blockchain before use<br>
+                    • <strong>Use menu "5. 🔧 Check/Deploy wallets"</strong> for automatic deployment<br>
+                    • <strong>Minimum balance:</strong> Need at least 0.05 TON for deployment<br>
+                    • <strong>Deployment cost:</strong> About 0.01-0.02 TON for gas<br><br>
                     <span class="emoji">📝</span> <strong>Note:</strong> Future updates will include W5 address support for better compatibility.
                 </div>
                 
@@ -1244,7 +1316,63 @@
                     <strong><span class="emoji">💡</span> Tip:</strong> Check balances regularly to ensure you have enough TON for purchases!
                 </div>
                 
-                <h3><span class="emoji">🚪</span> 5. Exit</h3>
+                <h3><span class="emoji">🔧</span> 5. Check/Deploy Wallets</h3>
+                <div class="highlight">
+                    <strong>What it does:</strong>
+                    <ul>
+                        <li>Checks all seed phrases from account configuration</li>
+                        <li>Determines if wallets are deployed in TON blockchain</li>
+                        <li>Automatically deploys undeployed wallets when funds are available</li>
+                        <li>Shows detailed information about each wallet's state</li>
+                    </ul>
+                </div>
+                
+                <h4>Checking process:</h4>
+                <ol>
+                    <li><strong>Seed phrase validation:</strong> Checks format (12 or 24 words)</li>
+                    <li><strong>Address retrieval:</strong> Shows wallet address for each account</li>
+                    <li><strong>Balance checking:</strong> Displays current TON balance</li>
+                    <li><strong>Deployment test:</strong> Attempts test transaction to verify deployment</li>
+                    <li><strong>Status determination:</strong> Shows if deployment is needed</li>
+                </ol>
+                
+                <h4>Wallet statuses:</h4>
+                <table>
+                    <tr>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">✅</span> Deployed</td>
+                        <td>Wallet is ready for use</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">⚠️</span> Needs deployment</td>
+                        <td>Wallet not deployed but has funds (≥ 0.05 TON)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="emoji">❌</span> Insufficient funds</td>
+                        <td>Need to fund wallet for deployment</td>
+                    </tr>
+                </table>
+                
+                <h4>Deployment options:</h4>
+                <ol>
+                    <li><strong>Selective deployment:</strong> Choose specific wallets by numbers</li>
+                    <li><strong>Deploy all:</strong> Automatically deploy all undeployed wallets</li>
+                    <li><strong>Refresh status:</strong> Recheck all wallet states</li>
+                    <li><strong>Back to menu:</strong> Cancel operation</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong><span class="emoji">⚠️</span> Important:</strong> Wallet deployment requires minimum 0.05 TON balance. Operation consumes about 0.01-0.02 TON for gas.
+                </div>
+                
+                <div class="info">
+                    <strong><span class="emoji">💡</span> Tip:</strong> Use this menu item before first purchase run to ensure all wallets are ready!
+                </div>
+                
+                <h3><span class="emoji">🚪</span> 6. Exit</h3>
                 <div class="info">
                     <strong>What it does:</strong>
                     <ul>

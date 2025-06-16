@@ -15,7 +15,7 @@ import (
 	"github.com/xssnick/tonutils-go/ton/wallet"
 )
 
-// TransactionRequest запрос на транзакцию
+// TransactionRequest transaction request structure
 type TransactionRequest struct {
 	ToAddress   string
 	Amount      int64
@@ -25,7 +25,7 @@ type TransactionRequest struct {
 	ResultChan  chan *TransactionResult
 }
 
-// TransactionQueue очередь транзакций для одной seed phrase
+// TransactionQueue transaction queue for one seed phrase
 type TransactionQueue struct {
 	wallet     *wallet.Wallet
 	client     *ton.APIClient
@@ -33,10 +33,10 @@ type TransactionQueue struct {
 	queue      chan *TransactionRequest
 	ctx        context.Context
 	cancel     context.CancelFunc
-	mu         sync.Mutex // Мьютекс для синхронизации транзакций
+	mu         sync.Mutex // Mutex for transaction synchronization
 }
 
-// NewTransactionQueue создает новую очередь транзакций
+// NewTransactionQueue creates a new transaction queue
 func NewTransactionQueue(seedPhrase string, client *ton.APIClient) (*TransactionQueue, error) {
 	words := strings.Split(seedPhrase, " ")
 	if len(words) != 24 {
@@ -55,18 +55,18 @@ func NewTransactionQueue(seedPhrase string, client *ton.APIClient) (*Transaction
 		wallet:     w,
 		client:     client,
 		seedPhrase: seedPhrase,
-		queue:      make(chan *TransactionRequest, 100), // Буфер на 100 транзакций
+		queue:      make(chan *TransactionRequest, 100), // Buffer for 100 transactions
 		ctx:        ctx,
 		cancel:     cancel,
 	}
 
-	// Запускаем обработчик очереди
+	// Start queue processor
 	go tq.processQueue()
 
 	return tq, nil
 }
 
-// processQueue обрабатывает очередь транзакций последовательно
+// processQueue processes transaction queue sequentially
 func (tq *TransactionQueue) processQueue() {
 	for {
 		select {
@@ -79,10 +79,10 @@ func (tq *TransactionQueue) processQueue() {
 	}
 }
 
-// processTransaction обрабатывает одну транзакцию с ожиданием подтверждения
+// processTransaction processes one transaction with confirmation waiting
 func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *TransactionResult {
-	// Блокируем доступ к кошельку на время всей операции
-	// Это гарантирует что транзакции отправляются строго последовательно
+	// Lock wallet access for the entire operation
+	// This ensures transactions are sent strictly sequentially
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
 
@@ -107,7 +107,7 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 	// Get sender address
 	fromAddr := tq.wallet.WalletAddress()
 
-	// Получаем текущий seqno перед отправкой транзакции
+	// Get current seqno before sending transaction
 	ctx := context.Background()
 
 	initialSeqno, err := tq.getSeqno(ctx, fromAddr)
@@ -122,11 +122,11 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 		}
 	}
 
-	// Создаем контекст с таймаутом для транзакции
+	// Create context with timeout for transaction
 	txCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Отправляем транзакцию (НЕ ждет подтверждения)
+	// Send transaction (does NOT wait for confirmation)
 	err = tq.wallet.Transfer(txCtx, addr, tlb.FromNanoTONU(uint64(req.Amount)), req.Comment)
 	if err != nil {
 		return &TransactionResult{
@@ -139,17 +139,17 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 		}
 	}
 
-	// Ждем подтверждения транзакции (изменения seqno)
+	// Wait for transaction confirmation (seqno change)
 	expectedSeqno := initialSeqno + 1
 	confirmed := false
 
-	// Ждем до 60 секунд подтверждения
+	// Wait up to 60 seconds for confirmation
 	for i := 0; i < 60; i++ {
 		time.Sleep(1 * time.Second)
 
 		currentSeqno, err := tq.getSeqno(ctx, fromAddr)
 		if err != nil {
-			continue // Продолжаем ждать при ошибках
+			continue // Continue waiting on errors
 		}
 
 		if currentSeqno >= expectedSeqno {
@@ -182,7 +182,7 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 	return result
 }
 
-// getSeqno получает текущий seqno для адреса
+// getSeqno gets current seqno for address
 func (tq *TransactionQueue) getSeqno(ctx context.Context, addr *address.Address) (uint32, error) {
 	block, err := tq.client.CurrentMasterchainInfo(ctx)
 	if err != nil {
@@ -191,19 +191,123 @@ func (tq *TransactionQueue) getSeqno(ctx context.Context, addr *address.Address)
 
 	res, err := tq.client.RunGetMethod(ctx, block, addr, "seqno")
 	if err != nil {
-		return 0, fmt.Errorf("RunGetMethod seqno: %w", err)
+		// Check if error is result of undeployed wallet
+		errStr := err.Error()
+		if strings.Contains(errStr, "account not found") ||
+			strings.Contains(errStr, "contract not found") ||
+			strings.Contains(errStr, "account is not active") ||
+			strings.Contains(errStr, "exit code") {
+
+			fmt.Printf("⚠️  Wallet not deployed, starting automatic deployment...\n")
+
+			// Attempt automatic deployment
+			deployErr := tq.deployWalletIfNeeded(ctx)
+			if deployErr != nil {
+				return 0, fmt.Errorf("wallet deployment error: %w", deployErr)
+			}
+
+			// Retry getting seqno after deployment
+			block, err = tq.client.CurrentMasterchainInfo(ctx)
+			if err != nil {
+				return 0, fmt.Errorf("CurrentMasterchainInfo after deployment: %w", err)
+			}
+
+			res, err = tq.client.RunGetMethod(ctx, block, addr, "seqno")
+			if err != nil {
+				return 0, fmt.Errorf("RunGetMethod seqno after deployment: %w", err)
+			}
+		} else {
+			return 0, fmt.Errorf("RunGetMethod seqno: %w", err)
+		}
 	}
 
-	// Используем правильный способ получения результата
+	// Use correct way to get result
 	if res.MustInt(0) == nil {
-		return 0, fmt.Errorf("RunGetMethod seqno дал пустой ответ")
+		return 0, fmt.Errorf("RunGetMethod seqno returned empty result")
 	}
 
 	seqno := res.MustInt(0).Uint64()
 	return uint32(seqno), nil
 }
 
-// AddTransaction добавляет транзакцию в очередь и ждет результата
+// deployWalletIfNeeded deploys wallet if not yet deployed
+func (tq *TransactionQueue) deployWalletIfNeeded(ctx context.Context) error {
+	fmt.Printf("🔍 Checking wallet balance for deployment...\n")
+
+	// Check current wallet balance
+	block, err := tq.client.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("CurrentMasterchainInfo: %w", err)
+	}
+
+	balance, err := tq.wallet.GetBalance(ctx, block)
+	if err != nil {
+		return fmt.Errorf("getting balance: %w", err)
+	}
+
+	balanceNano := balance.NanoTON()
+	balanceTON := formatTON(balanceNano)
+
+	fmt.Printf("💰 Wallet balance: %s TON\n", balanceTON)
+
+	// Check if there are enough funds for deployment (minimum 0.05 TON required)
+	minDeployAmount := big.NewInt(50000000) // 0.05 TON in nanotokens
+	if balanceNano.Cmp(minDeployAmount) < 0 {
+		return fmt.Errorf("insufficient funds for wallet deployment. Need minimum 0.05 TON, available: %s TON", balanceTON)
+	}
+
+	fmt.Printf("🚀 Starting wallet deployment...\n")
+
+	// Deploy wallet by sending minimal transaction to self
+	deployAmount := big.NewInt(1000000) // 0.001 TON in nanotokens
+	selfAddr := tq.wallet.WalletAddress()
+
+	deployCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	fmt.Printf("📤 Sending deployment transaction (0.001 TON)...\n")
+
+	err = tq.wallet.Transfer(deployCtx, selfAddr, tlb.FromNanoTONU(deployAmount.Uint64()), "🚀 Wallet deployment")
+	if err != nil {
+		return fmt.Errorf("deployment transaction send error: %w", err)
+	}
+
+	fmt.Printf("✅ Deployment transaction sent\n")
+	fmt.Printf("⏳ Waiting for deployment confirmation (up to 60 seconds)...\n")
+
+	// Wait for deployment up to 60 seconds
+	for i := 0; i < 60; i++ {
+		time.Sleep(1 * time.Second)
+
+		if i%10 == 0 && i > 0 {
+			fmt.Printf("⏳ Waiting %d/60 seconds...\n", i)
+		}
+
+		// Check if wallet is deployed
+		currentBlock, blockErr := tq.client.CurrentMasterchainInfo(ctx)
+		if blockErr != nil {
+			continue // Skip block errors
+		}
+
+		_, seqnoErr := tq.client.RunGetMethod(ctx, currentBlock, selfAddr, "seqno")
+		if seqnoErr == nil {
+			fmt.Printf("🎉 Wallet successfully deployed!\n")
+			fmt.Printf("✅ Now transactions can be sent\n")
+			return nil
+		}
+	}
+
+	return fmt.Errorf("wallet deployment timeout (60 seconds). Please retry the operation")
+}
+
+// formatTON formats nanotokens to readable format
+func formatTON(nanoTON *big.Int) string {
+	ton := new(big.Float).SetInt(nanoTON)
+	ton.Quo(ton, big.NewFloat(1e9))
+	return ton.Text('f', 4)
+}
+
+// AddTransaction adds transaction to queue and waits for result
 func (tq *TransactionQueue) AddTransaction(toAddress string, amount int64, comment string, testMode bool, testAddress string) *TransactionResult {
 	resultChan := make(chan *TransactionResult, 1)
 
@@ -216,14 +320,14 @@ func (tq *TransactionQueue) AddTransaction(toAddress string, amount int64, comme
 		ResultChan:  resultChan,
 	}
 
-	// Добавляем в очередь
+	// Add to queue
 	select {
 	case tq.queue <- req:
-		// Ждем результата (может занять до 60 секунд на транзакцию)
+		// Wait for result (may take up to 60 seconds per transaction)
 		result := <-resultChan
 		return result
 	case <-time.After(5 * time.Second):
-		// Таймаут добавления в очередь
+		// Queue addition timeout
 		return &TransactionResult{
 			FromAddress:   tq.wallet.WalletAddress().String(),
 			ToAddress:     toAddress,
@@ -235,12 +339,12 @@ func (tq *TransactionQueue) AddTransaction(toAddress string, amount int64, comme
 	}
 }
 
-// Close закрывает очередь транзакций
+// Close closes transaction queue
 func (tq *TransactionQueue) Close() {
 	tq.cancel()
 }
 
-// WalletManager глобальный менеджер кошельков с очередями транзакций
+// WalletManager global wallet manager with transaction queues
 type WalletManager struct {
 	queues map[string]*TransactionQueue
 	mu     sync.RWMutex
@@ -250,7 +354,7 @@ type WalletManager struct {
 var globalWalletManager *WalletManager
 var managerOnce sync.Once
 
-// getWalletManager возвращает глобальный экземпляр менеджера кошельков
+// getWalletManager returns global wallet manager instance
 func getWalletManager() *WalletManager {
 	managerOnce.Do(func() {
 		// Connect to TON mainnet
@@ -274,7 +378,7 @@ func getWalletManager() *WalletManager {
 	return globalWalletManager
 }
 
-// getOrCreateQueue получает или создает очередь транзакций для seed phrase
+// getOrCreateQueue gets or creates transaction queue for seed phrase
 func (wm *WalletManager) getOrCreateQueue(seedPhrase string) (*TransactionQueue, error) {
 	wm.mu.RLock()
 	if queue, exists := wm.queues[seedPhrase]; exists {
@@ -286,12 +390,12 @@ func (wm *WalletManager) getOrCreateQueue(seedPhrase string) (*TransactionQueue,
 	wm.mu.Lock()
 	defer wm.mu.Unlock()
 
-	// Double-check после получения write lock
+	// Double-check after getting write lock
 	if queue, exists := wm.queues[seedPhrase]; exists {
 		return queue, nil
 	}
 
-	// Создаем новую очередь
+	// Create new queue
 	queue, err := NewTransactionQueue(seedPhrase, wm.client)
 	if err != nil {
 		return nil, err
@@ -311,7 +415,7 @@ type TONClient struct {
 func NewTONClient(seedPhrase string) (*TONClient, error) {
 	wm := getWalletManager()
 
-	// Получаем или создаем очередь для этой seed phrase
+	// Get or create queue for this seed phrase
 	queue, err := wm.getOrCreateQueue(seedPhrase)
 	if err != nil {
 		return nil, err
@@ -335,8 +439,8 @@ type TransactionResult struct {
 
 // SendTON sends TON transaction through queue and returns information about it
 func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64, comment string, testMode bool, testAddress string) (*TransactionResult, error) {
-	// Добавляем транзакцию в очередь и ждем результата
-	// Это может занять время, так как транзакция ждет подтверждения
+	// Add transaction to queue and wait for result
+	// This may take time as transaction waits for confirmation
 	result := c.queue.AddTransaction(toAddress, amount, comment, testMode, testAddress)
 
 	if !result.Success {

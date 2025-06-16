@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"stickersbot/internal/client"
 	"stickersbot/internal/config"
 	"stickersbot/internal/service"
 )
@@ -313,7 +315,7 @@ func (c *CLI) runMainMenu() {
 	for {
 		c.printMainMenu()
 
-		fmt.Print("Select menu option (1-5): ")
+		fmt.Print("Select menu option (1-6): ")
 		input, _ := reader.ReadString('\n')
 		choice := strings.TrimSpace(input)
 
@@ -327,6 +329,8 @@ func (c *CLI) runMainMenu() {
 		case "4":
 			c.handleShowBalances()
 		case "5":
+			c.handleCheckDeployWallets()
+		case "6":
 			fmt.Println("👋 Goodbye!")
 			return
 		default:
@@ -354,7 +358,8 @@ func (c *CLI) printMainMenu() {
 	fmt.Println("2. 🛑 Stop task")
 	fmt.Println("3. 🔐 Manage account authentication")
 	fmt.Println("4. 💰 Show wallet balances")
-	fmt.Println("5. 🚪 Exit")
+	fmt.Println("5. 🔧 Check/Deploy wallets")
+	fmt.Println("6. 🚪 Exit")
 	fmt.Println(strings.Repeat("=", 60))
 }
 
@@ -805,6 +810,216 @@ func (c *CLI) authenticateSelectedAccounts(indices []int) {
 	}
 
 	fmt.Printf("📊 Authentication complete: %d/%d accounts successful\n", successCount, len(indices))
+	fmt.Print("Press Enter to continue...")
+	bufio.NewReader(os.Stdin).ReadLine()
+}
+
+// handleCheckDeployWallets handles checking and deploying wallets
+func (c *CLI) handleCheckDeployWallets() {
+	fmt.Println("🔧 Checking/Deploying Wallets")
+	fmt.Println(strings.Repeat("-", 80))
+
+	ctx := context.Background()
+	reader := bufio.NewReader(os.Stdin)
+
+	var deployRequired []int
+
+	fmt.Println("🔍 Scanning wallet states for all accounts...\n")
+
+	// Check all accounts
+	for i, account := range c.config.Accounts {
+		fmt.Printf("Account %d: %s\n", i+1, account.Name)
+
+		// Check if seed phrase is configured
+		if account.SeedPhrase == "" {
+			fmt.Printf("   ⚠️  No seed phrase configured - skipping\n\n")
+			continue
+		}
+
+		// Validate seed phrase format
+		words := strings.Fields(account.SeedPhrase)
+		if len(words) != 12 && len(words) != 24 {
+			fmt.Printf("   ❌ Invalid seed phrase format - skipping\n\n")
+			continue
+		}
+
+		// Create TON client
+		tonClient, err := client.NewTONClient(account.SeedPhrase)
+		if err != nil {
+			fmt.Printf("   ❌ Error creating TON client: %v\n\n", err)
+			continue
+		}
+
+		// Get wallet address
+		address := tonClient.GetAddress()
+		fmt.Printf("   📍 Address: %s\n", address.String())
+
+		// Get balance and check deployment status
+		balance, err := tonClient.GetBalance(ctx)
+		if err != nil {
+			fmt.Printf("   ❌ Error getting balance: %v\n\n", err)
+			continue
+		}
+
+		// Convert balance to TON
+		balanceTON := new(big.Float).SetInt(balance)
+		balanceTON.Quo(balanceTON, big.NewFloat(1e9))
+		balanceFloat, _ := balanceTON.Float64()
+
+		fmt.Printf("   💰 Balance: %.4f TON\n", balanceFloat)
+
+		// Check if wallet is deployed by trying to get seqno
+		deployed := c.isWalletDeployed(ctx, tonClient)
+		if deployed {
+			fmt.Printf("   ✅ Wallet is deployed and ready\n\n")
+		} else {
+			fmt.Printf("   ⚠️  Wallet is NOT deployed - requires deployment\n")
+			if balanceFloat >= 0.05 {
+				fmt.Printf("   💡 Balance sufficient for deployment (>= 0.05 TON)\n")
+				deployRequired = append(deployRequired, i)
+			} else {
+				fmt.Printf("   ❌ Insufficient balance for deployment (need >= 0.05 TON)\n")
+			}
+			fmt.Println()
+		}
+	}
+
+	// Show deployment options if needed
+	if len(deployRequired) > 0 {
+		fmt.Printf("🚀 Found %d wallets that need deployment\n\n", len(deployRequired))
+
+		for {
+			fmt.Println("Deployment options:")
+			fmt.Println("1. 🔄 Deploy selected wallets")
+			fmt.Println("2. 🔄 Deploy all undeployed wallets")
+			fmt.Println("3. 📋 Refresh wallet statuses")
+			fmt.Println("4. 🔙 Back to main menu")
+
+			fmt.Print("Select option (1-4): ")
+			input, _ := reader.ReadString('\n')
+			choice := strings.TrimSpace(input)
+
+			switch choice {
+			case "1":
+				c.handleSelectiveDeployment(deployRequired)
+				return
+			case "2":
+				c.deployWallets(deployRequired)
+				return
+			case "3":
+				c.handleCheckDeployWallets() // Recursive call to refresh
+				return
+			case "4":
+				return
+			default:
+				fmt.Println("❌ Invalid choice. Please try again.")
+			}
+		}
+	} else {
+		fmt.Println("✅ All configured wallets are deployed and ready!")
+		fmt.Print("Press Enter to continue...")
+		reader.ReadLine()
+	}
+}
+
+// isWalletDeployed checks if wallet is deployed by attempting a test transaction
+func (c *CLI) isWalletDeployed(ctx context.Context, tonClient *client.TONClient) bool {
+	// Try to send a minimal transaction to self to test deployment
+	// If wallet is not deployed, this will automatically deploy it
+	address := tonClient.GetAddress()
+
+	// Create a test transaction with minimal amount (0.001 TON)
+	result, err := tonClient.SendTON(ctx, address.String(), 1000000, "🔍 Deployment check", true, address.String())
+	if err != nil {
+		// If there's an error, assume wallet is not deployed
+		return false
+	}
+
+	// If transaction was successful, wallet is deployed
+	return result.Success
+}
+
+// handleSelectiveDeployment handles selective wallet deployment
+func (c *CLI) handleSelectiveDeployment(deployRequired []int) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("📝 Wallets requiring deployment:")
+	for i, accountIndex := range deployRequired {
+		account := c.config.Accounts[accountIndex]
+		fmt.Printf("%d. %s (Account %d)\n", i+1, account.Name, accountIndex+1)
+	}
+
+	fmt.Print("\nEnter wallet numbers to deploy (e.g., 1,3,5) or 'all' for all: ")
+	input, _ := reader.ReadString('\n')
+	selection := strings.TrimSpace(input)
+
+	var selectedIndices []int
+
+	if strings.ToLower(selection) == "all" {
+		selectedIndices = deployRequired
+	} else {
+		// Parse selected numbers
+		parts := strings.Split(selection, ",")
+		for _, part := range parts {
+			num, err := strconv.Atoi(strings.TrimSpace(part))
+			if err != nil || num < 1 || num > len(deployRequired) {
+				fmt.Printf("❌ Invalid selection: %s\n", part)
+				continue
+			}
+			selectedIndices = append(selectedIndices, deployRequired[num-1])
+		}
+	}
+
+	if len(selectedIndices) == 0 {
+		fmt.Println("❌ No valid wallets selected")
+		return
+	}
+
+	c.deployWallets(selectedIndices)
+}
+
+// deployWallets deploys the specified wallets
+func (c *CLI) deployWallets(accountIndices []int) {
+	fmt.Printf("🚀 Starting deployment for %d wallets...\n\n", len(accountIndices))
+
+	ctx := context.Background()
+	successCount := 0
+
+	for _, accountIndex := range accountIndices {
+		account := c.config.Accounts[accountIndex]
+		fmt.Printf("🔄 Deploying wallet for %s...\n", account.Name)
+
+		// Create TON client
+		tonClient, err := client.NewTONClient(account.SeedPhrase)
+		if err != nil {
+			fmt.Printf("   ❌ Error creating TON client: %v\n\n", err)
+			continue
+		}
+
+		// The deployment will be handled automatically by the TON client
+		// when first transaction is attempted. We can trigger this by
+		// sending a small amount to self
+
+		address := tonClient.GetAddress()
+		fmt.Printf("   📍 Wallet address: %s\n", address.String())
+
+		// Send deployment transaction (0.001 TON to self)
+		result, err := tonClient.SendTON(ctx, address.String(), 1000000, "🚀 Wallet deployment", c.config.TestMode, c.config.TestAddress)
+		if err != nil {
+			fmt.Printf("   ❌ Deployment failed: %v\n\n", err)
+			continue
+		}
+
+		if result.Success {
+			fmt.Printf("   ✅ Wallet deployed successfully!\n")
+			fmt.Printf("   📊 Transaction ID: %s\n\n", result.TransactionID)
+			successCount++
+		} else {
+			fmt.Printf("   ❌ Deployment failed\n\n")
+		}
+	}
+
+	fmt.Printf("🎉 Deployment completed! Success: %d/%d\n", successCount, len(accountIndices))
 	fmt.Print("Press Enter to continue...")
 	bufio.NewReader(os.Stdin).ReadLine()
 }
