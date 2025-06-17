@@ -441,6 +441,11 @@ func (c *CLI) handleStopTask() {
 	stats := c.buyerService.GetStatistics()
 	fmt.Printf("✅ Task stopped. Statistics: Total: %d, Success: %d, Errors: %d, TON sent: %d\n",
 		stats.TotalRequests, stats.SuccessRequests, stats.FailedRequests, stats.SentTransactions)
+
+	fmt.Printf("\n💡 Press Enter to return to main menu...")
+
+	// Wait for user input
+	bufio.NewReader(os.Stdin).ReadLine()
 }
 
 // handleShowBalances shows wallet balances for all accounts
@@ -470,7 +475,7 @@ func (c *CLI) handleShowBalances() {
 
 // monitorLogs monitors and displays logs
 func (c *CLI) monitorLogs() {
-	for c.isRunning {
+	for c.isRunning && c.buyerService.IsRunning() {
 		select {
 		case log := <-c.buyerService.GetLogChannel():
 			fmt.Printf("📝 %s\n", log)
@@ -485,10 +490,10 @@ func (c *CLI) monitorStats() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
-	for c.isRunning {
+	for c.isRunning && c.buyerService.IsRunning() {
 		select {
 		case <-ticker.C:
-			if c.isRunning {
+			if c.isRunning && c.buyerService.IsRunning() {
 				stats := c.buyerService.GetStatistics()
 				fmt.Printf("📈 Stats: Total: %d | Success: %d | Errors: %d | TON: %d | RPS: %.1f | Time: %s\n",
 					stats.TotalRequests,
@@ -502,6 +507,25 @@ func (c *CLI) monitorStats() {
 		case <-c.stopChan:
 			return
 		}
+	}
+
+	// Show final stats when service stops automatically
+	if c.isRunning && !c.buyerService.IsRunning() {
+		stats := c.buyerService.GetStatistics()
+		fmt.Printf("🏁 Final Stats: Total: %d | Success: %d | Errors: %d | TON: %d | Time: %s\n",
+			stats.TotalRequests,
+			stats.SuccessRequests,
+			stats.FailedRequests,
+			stats.SentTransactions,
+			stats.Duration.Truncate(time.Second),
+		)
+		fmt.Printf("\n✅ All tasks completed successfully!\n")
+		fmt.Printf("💡 Press Enter to return to main menu...")
+
+		// Wait for user input
+		bufio.NewReader(os.Stdin).ReadLine()
+
+		c.isRunning = false // Stop other monitoring
 	}
 }
 

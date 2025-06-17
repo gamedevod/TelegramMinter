@@ -32,6 +32,7 @@ type BuyerService struct {
 	config         *config.Config
 	statistics     *types.Statistics
 	isRunning      bool
+	isStopping     bool // Flag to indicate stopping in progress
 	cancel         context.CancelFunc
 	mu             sync.RWMutex
 	logChan        chan string
@@ -46,6 +47,11 @@ type BuyerService struct {
 	// Snipe transaction counters per account
 	snipeTransactionCounters map[string]int // Account name -> transaction count
 	snipeCountersMu          sync.RWMutex   // Mutex for snipe counters
+
+	// Active accounts tracking
+	activeAccounts   map[string]bool // Account name -> is active
+	totalAccounts    int             // Total number of accounts
+	activeAccountsMu sync.RWMutex    // Mutex for active accounts
 }
 
 // NewBuyerService creates a new purchase service
@@ -65,6 +71,8 @@ func NewBuyerService(cfg *config.Config) *BuyerService {
 		transactionLog:           logFile,
 		tokenManager:             NewTokenManager(cfg),
 		snipeTransactionCounters: make(map[string]int),
+		activeAccounts:           make(map[string]bool),
+		totalAccounts:            0,
 	}
 }
 
@@ -128,6 +136,20 @@ func (bs *BuyerService) Start() error {
 	} else {
 		bs.logChan <- "⚠️ PRODUCTION MODE: payments will be sent to addresses from API"
 	}
+
+	// Initialize active accounts tracking
+	bs.activeAccountsMu.Lock()
+	bs.totalAccounts = len(bs.config.Accounts)
+	for _, account := range bs.config.Accounts {
+		// Only mark accounts as active if they will actually run (not snipe-only or disabled)
+		if account.SnipeMonitor == nil || !account.SnipeMonitor.Enabled {
+			bs.activeAccounts[account.Name] = true
+		} else {
+			// For snipe accounts, they are active until they reach transaction limit
+			bs.activeAccounts[account.Name] = true
+		}
+	}
+	bs.activeAccountsMu.Unlock()
 
 	// Launch workers for each account
 	var wg sync.WaitGroup
@@ -218,6 +240,16 @@ func (bs *BuyerService) accountWorker(ctx context.Context, wg *sync.WaitGroup, w
 			bs.logChan <- fmt.Sprintf("🛑 Thread %d stopped", worker.workerID)
 			return
 		default:
+			// Check if service is stopping
+			bs.mu.RLock()
+			stopping := bs.isStopping
+			bs.mu.RUnlock()
+
+			if stopping {
+				bs.logChan <- fmt.Sprintf("🛑 Thread %d stopping gracefully", worker.workerID)
+				return
+			}
+
 			// Check if account is active
 			worker.mu.RLock()
 			isActive := worker.isActive
@@ -347,6 +379,9 @@ func (bs *BuyerService) performAccountBuy(worker *AccountWorker, accountNum int)
 				worker.isActive = false
 				bs.logChan <- fmt.Sprintf("🛑 Account %d '%s' reached transaction limit (%d/%d) and will be stopped",
 					accountNum, worker.account.Name, currentCount, worker.account.MaxTransactions)
+
+				// Mark account as inactive in the service
+				bs.setAccountInactive(worker.account.Name)
 			}
 			worker.mu.Unlock()
 
@@ -409,6 +444,14 @@ func (bs *BuyerService) Stop() {
 		bs.transactionLog = nil
 	}
 
+	// Reset active accounts tracking
+	bs.activeAccountsMu.Lock()
+	bs.activeAccounts = make(map[string]bool)
+	bs.totalAccounts = 0
+	bs.activeAccountsMu.Unlock()
+
+	bs.isRunning = false
+	bs.isStopping = false // Reset stopping flag
 	bs.logChan <- "🛑 Stopping sticker purchase..."
 }
 
@@ -435,7 +478,7 @@ func (bs *BuyerService) GetStatistics() *types.Statistics {
 	return &stats
 }
 
-// GetLogChannel returns channel for receiving logs
+// GetLogChannel returns log channel
 func (bs *BuyerService) GetLogChannel() <-chan string {
 	return bs.logChan
 }
@@ -451,13 +494,16 @@ func (bs *BuyerService) updateStatistics(ctx context.Context) {
 			return
 		case <-ticker.C:
 			stats := bs.GetStatistics()
-			bs.logChan <- fmt.Sprintf("📈 Total: %d | Successful: %d | Failed: %d | InvalidTokens: %d | TON sent: %d | RPS: %.1f | Time: %s",
+			activeCount, totalAccounts := bs.getActiveAccountsCount()
+			bs.logChan <- fmt.Sprintf("📈 Total: %d | Successful: %d | Failed: %d | InvalidTokens: %d | TON sent: %d | RPS: %.1f | Active accounts: %d/%d | Time: %s",
 				stats.TotalRequests,
 				stats.SuccessRequests,
 				stats.FailedRequests,
 				stats.InvalidTokens,
 				stats.SentTransactions,
 				stats.RequestsPerSec,
+				activeCount,
+				totalAccounts,
 				stats.Duration.Truncate(time.Second),
 			)
 		}
@@ -677,6 +723,9 @@ func (bs *BuyerService) performSnipePurchase(accountName string, collectionID in
 					break
 				}
 			}
+
+			// Mark account as inactive in the service
+			bs.setAccountInactive(account.Name)
 		}
 
 		// Log transaction to file
@@ -792,4 +841,63 @@ func createAccountWorker(account config.Account, testMode bool, testAddr string,
 		transactionCount: 0,
 		isActive:         true,
 	}, nil
+}
+
+// setAccountInactive помечает аккаунт как неактивный и проверяет нужно ли остановить сервис
+func (bs *BuyerService) setAccountInactive(accountName string) {
+	bs.activeAccountsMu.Lock()
+	defer bs.activeAccountsMu.Unlock()
+
+	if bs.activeAccounts[accountName] {
+		bs.activeAccounts[accountName] = false
+		bs.logChan <- fmt.Sprintf("🛑 Account '%s' stopped due to transaction limit", accountName)
+
+		// Check if all accounts are inactive
+		activeCount := 0
+		for _, isActive := range bs.activeAccounts {
+			if isActive {
+				activeCount++
+			}
+		}
+
+		bs.logChan <- fmt.Sprintf("📊 Active accounts: %d/%d", activeCount, bs.totalAccounts)
+
+		if activeCount == 0 {
+			bs.logChan <- "🏁 All accounts reached transaction limits - stopping service"
+
+			// Set stopping flag first to prevent new operations
+			bs.mu.Lock()
+			bs.isStopping = true
+			bs.mu.Unlock()
+
+			// Give time for current transactions to complete
+			go func() {
+				time.Sleep(3 * time.Second) // Wait for current operations to finish
+
+				// Stop the service
+				bs.mu.Lock()
+				bs.isRunning = false
+				bs.mu.Unlock()
+
+				if bs.cancel != nil {
+					bs.cancel() // Stop all goroutines
+				}
+			}()
+		}
+	}
+}
+
+// getActiveAccountsCount возвращает количество активных аккаунтов
+func (bs *BuyerService) getActiveAccountsCount() (int, int) {
+	bs.activeAccountsMu.RLock()
+	defer bs.activeAccountsMu.RUnlock()
+
+	activeCount := 0
+	for _, isActive := range bs.activeAccounts {
+		if isActive {
+			activeCount++
+		}
+	}
+
+	return activeCount, bs.totalAccounts
 }

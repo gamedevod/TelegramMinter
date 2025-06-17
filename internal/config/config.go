@@ -57,10 +57,7 @@ type Config struct {
 	Language string `json:"language"`
 
 	// Network settings
-	Timeout    int    `json:"timeout"`
-	RetryCount int    `json:"retry_count"`
-	UseProxy   bool   `json:"use_proxy"`
-	ProxyURL   string `json:"proxy_url"`
+	Timeout int `json:"timeout"`
 
 	// Test settings (common for all accounts)
 	TestMode    bool   `json:"test_mode"`
@@ -77,9 +74,6 @@ func Default() *Config {
 		Theme:       "default",
 		Language:    "ru",
 		Timeout:     30,
-		RetryCount:  3,
-		UseProxy:    false,
-		ProxyURL:    "",
 		TestMode:    false,
 		TestAddress: "",
 		Accounts: []Account{

@@ -86,6 +86,10 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
 
+	// Mask seed phrase for logging
+	maskedSeed := tq.seedPhrase[:6] + "..." + tq.seedPhrase[len(tq.seedPhrase)-6:]
+	fmt.Printf("🔗 [QUEUE %s] Starting transaction processing...\n", maskedSeed)
+
 	toAddress := req.ToAddress
 	if req.TestMode && req.TestAddress != "" {
 		toAddress = req.TestAddress
@@ -94,6 +98,7 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 	// Parse recipient address
 	addr, err := address.ParseAddr(toAddress)
 	if err != nil {
+		fmt.Printf("❌ [QUEUE %s] Failed to parse address: %v\n", maskedSeed, err)
 		return &TransactionResult{
 			FromAddress:   tq.wallet.WalletAddress().String(),
 			ToAddress:     toAddress,
@@ -112,6 +117,7 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 
 	initialSeqno, err := tq.getSeqno(ctx, fromAddr)
 	if err != nil {
+		fmt.Printf("❌ [QUEUE %s] Failed to get seqno: %v\n", maskedSeed, err)
 		return &TransactionResult{
 			FromAddress:   fromAddr.String(),
 			ToAddress:     toAddress,
@@ -121,6 +127,8 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 			Success:       false,
 		}
 	}
+
+	fmt.Printf("📋 [QUEUE %s] Current seqno: %d, sending transaction...\n", maskedSeed, initialSeqno)
 
 	// Create context with timeout for transaction
 	txCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -129,6 +137,7 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 	// Send transaction (does NOT wait for confirmation)
 	err = tq.wallet.Transfer(txCtx, addr, tlb.FromNanoTONU(uint64(req.Amount)), req.Comment)
 	if err != nil {
+		fmt.Printf("❌ [QUEUE %s] Transfer failed: %v\n", maskedSeed, err)
 		return &TransactionResult{
 			FromAddress:   fromAddr.String(),
 			ToAddress:     toAddress,
@@ -138,6 +147,8 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 			Success:       false,
 		}
 	}
+
+	fmt.Printf("📤 [QUEUE %s] Transaction sent, waiting for confirmation (expected seqno: %d)...\n", maskedSeed, initialSeqno+1)
 
 	// Wait for transaction confirmation (seqno change)
 	expectedSeqno := initialSeqno + 1
@@ -154,11 +165,13 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 
 		if currentSeqno >= expectedSeqno {
 			confirmed = true
+			fmt.Printf("✅ [QUEUE %s] Transaction confirmed! New seqno: %d\n", maskedSeed, currentSeqno)
 			break
 		}
 	}
 
 	if !confirmed {
+		fmt.Printf("⏰ [QUEUE %s] Transaction confirmation timeout\n", maskedSeed)
 		return &TransactionResult{
 			FromAddress:   fromAddr.String(),
 			ToAddress:     toAddress,
@@ -179,6 +192,7 @@ func (tq *TransactionQueue) processTransaction(req *TransactionRequest) *Transac
 		Success:       true,
 	}
 
+	fmt.Printf("🎉 [QUEUE %s] Transaction completed successfully!\n", maskedSeed)
 	return result
 }
 
@@ -344,10 +358,12 @@ func (tq *TransactionQueue) Close() {
 	tq.cancel()
 }
 
+// Global transaction queues by seed phrase (independent of proxy settings)
+var globalQueues = make(map[string]*TransactionQueue)
+var globalQueuesMu sync.RWMutex
+
 // WalletManager global wallet manager with transaction queues
 type WalletManager struct {
-	queues map[string]*TransactionQueue
-	mu     sync.RWMutex
 	client *ton.APIClient
 }
 
@@ -406,35 +422,41 @@ func createWalletManager(useProxy bool, proxyURL string) *WalletManager {
 	client := ton.NewAPIClient(connection)
 
 	return &WalletManager{
-		queues: make(map[string]*TransactionQueue),
 		client: client,
 	}
 }
 
 // getOrCreateQueue gets or creates transaction queue for seed phrase
-func (wm *WalletManager) getOrCreateQueue(seedPhrase string) (*TransactionQueue, error) {
-	wm.mu.RLock()
-	if queue, exists := wm.queues[seedPhrase]; exists {
-		wm.mu.RUnlock()
+func getOrCreateQueue(seedPhrase string, client *ton.APIClient) (*TransactionQueue, error) {
+	// Mask seed phrase for logging
+	maskedSeed := seedPhrase[:6] + "..." + seedPhrase[len(seedPhrase)-6:]
+
+	globalQueuesMu.RLock()
+	if queue, exists := globalQueues[seedPhrase]; exists {
+		globalQueuesMu.RUnlock()
+		fmt.Printf("🔄 Using existing transaction queue for seed: %s\n", maskedSeed)
 		return queue, nil
 	}
-	wm.mu.RUnlock()
+	globalQueuesMu.RUnlock()
 
-	wm.mu.Lock()
-	defer wm.mu.Unlock()
+	globalQueuesMu.Lock()
+	defer globalQueuesMu.Unlock()
 
 	// Double-check after getting write lock
-	if queue, exists := wm.queues[seedPhrase]; exists {
+	if queue, exists := globalQueues[seedPhrase]; exists {
+		fmt.Printf("🔄 Using existing transaction queue for seed: %s (after lock)\n", maskedSeed)
 		return queue, nil
 	}
 
 	// Create new queue
-	queue, err := NewTransactionQueue(seedPhrase, wm.client)
+	fmt.Printf("🆕 Creating new transaction queue for seed: %s\n", maskedSeed)
+	queue, err := NewTransactionQueue(seedPhrase, client)
 	if err != nil {
 		return nil, err
 	}
 
-	wm.queues[seedPhrase] = queue
+	globalQueues[seedPhrase] = queue
+	fmt.Printf("✅ Transaction queue created successfully for seed: %s\n", maskedSeed)
 	return queue, nil
 }
 
@@ -456,7 +478,7 @@ func NewTONClientWithProxy(seedPhrase string, useProxy bool, proxyURL string) (*
 	wm := getWalletManager(useProxy, proxyURL)
 
 	// Get or create queue for this seed phrase
-	queue, err := wm.getOrCreateQueue(seedPhrase)
+	queue, err := getOrCreateQueue(seedPhrase, wm.client)
 	if err != nil {
 		return nil, err
 	}
