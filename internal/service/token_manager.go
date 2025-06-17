@@ -189,10 +189,19 @@ func (tm *TokenManager) refreshTokenViaTelegram(account *config.Account) (string
 		sessionFile = fmt.Sprintf("sessions/%s.session", cleanPhone)
 	}
 
-	// Create authentication service with proxy support
+	// Validate account API credentials
+	if account.APIId == 0 {
+		return "", fmt.Errorf("API ID not specified for account %s", account.Name)
+	}
+
+	if account.APIHash == "" {
+		return "", fmt.Errorf("API Hash not specified for account %s", account.Name)
+	}
+
+	// Create authentication service with proxy support using account's individual API credentials
 	authService := telegram.NewAuthServiceWithProxy(
-		tm.config.APIId,
-		tm.config.APIHash,
+		account.APIId,
+		account.APIHash,
 		account.PhoneNumber,
 		sessionFile,
 		account.TwoFactorPassword,

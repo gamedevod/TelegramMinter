@@ -137,13 +137,13 @@ In the `config.json` file you will see an empty template. Fill it with your data
 ```json
 {
   "license_key": "YOUR_LICENSE_KEY_HERE",
-  "api_id": 1234567,
-  "api_hash": "abcd1234efgh5678ijkl9012mnop3456",
   "test_mode": true,
   "test_address": "UQD...",
   "accounts": [
     {
       "name": "My Main Account",
+      "api_id": 1234567,
+      "api_hash": "abcd1234efgh5678ijkl9012mnop3456",
       "phone_number": "+1234567890",
       "collection": 123,
       "character": 456,
@@ -174,14 +174,14 @@ In the `config.json` file you will see an empty template. Fill it with your data
 ### Main settings:
 
 - **`license_key`** - Program license key (obtain from developers)
-- **`api_id`** - Your Telegram application ID (obtained in step 3)
-- **`api_hash`** - Your Telegram application hash (obtained in step 3)
 - **`test_mode`** - Test mode (true = test, false = real purchases)
 - **`test_address`** - Wallet address for test payments
 
 ### Account settings:
 
 - **`name`** - Any name for the account (for convenience)
+- **`api_id`** - Your Telegram application ID for this account (obtained in step 3)
+- **`api_hash`** - Your Telegram application hash for this account (obtained in step 3)
 - **`phone_number`** - Telegram account phone number (with country code, e.g., "+1234567890")
 - **`collection`** - Sticker collection ID for purchase
 - **`character`** - Character ID in the collection
@@ -244,11 +244,11 @@ When proxy is enabled for an account, the following go through it:
 
 ```json
 {
-  "api_id": 12345,
-  "api_hash": "your_api_hash",
   "accounts": [
     {
       "name": "Account 1 - Direct",
+      "api_id": 12345,
+      "api_hash": "your_api_hash",
       "phone_number": "+1234567890",
       "seed_phrase": "your 24 word seed phrase here",
       "use_proxy": false,
@@ -260,6 +260,8 @@ When proxy is enabled for an account, the following go through it:
     },
     {
       "name": "Account 2 - With Proxy",
+      "api_id": 67890,
+      "api_hash": "another_api_hash",
       "phone_number": "+1234567891", 
       "seed_phrase": "another 24 word seed phrase here",
       "use_proxy": true,

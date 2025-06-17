@@ -28,6 +28,15 @@ func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 		if ai.needsTelegramAuth(account) {
 			log.Printf("🔐 Telegram authorization for account: %s", account.Name)
 
+			// Validate account API credentials
+			if account.APIId == 0 {
+				return fmt.Errorf("account %s: API ID not specified", account.Name)
+			}
+
+			if account.APIHash == "" {
+				return fmt.Errorf("account %s: API Hash not specified", account.Name)
+			}
+
 			// Determine session file path
 			sessionFile := account.SessionFile
 			if sessionFile == "" {
@@ -44,10 +53,10 @@ func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 
 			log.Printf("📁 Session file will be created/used: %s", sessionFile)
 
-			// Create authorization service with common parameters
+			// Create authorization service with account's individual API credentials
 			authService := telegram.NewAuthService(
-				ai.config.APIId,
-				ai.config.APIHash,
+				account.APIId,
+				account.APIHash,
 				account.PhoneNumber,
 				sessionFile,
 				account.TwoFactorPassword,
@@ -83,12 +92,12 @@ func (ai *AuthIntegration) ValidateAccounts() []error {
 
 	for _, account := range ai.config.Accounts {
 		if ai.needsTelegramAuth(account) {
-			if ai.config.APIId == 0 {
-				errors = append(errors, fmt.Errorf("account %s: api_id not specified in common settings", account.Name))
+			if account.APIId == 0 {
+				errors = append(errors, fmt.Errorf("account %s: API ID not specified", account.Name))
 			}
 
-			if ai.config.APIHash == "" {
-				errors = append(errors, fmt.Errorf("account %s: api_hash not specified in common settings", account.Name))
+			if account.APIHash == "" {
+				errors = append(errors, fmt.Errorf("account %s: API Hash not specified", account.Name))
 			}
 
 			if account.PhoneNumber == "" {
@@ -103,8 +112,8 @@ func (ai *AuthIntegration) ValidateAccounts() []error {
 // hasTelegramAuth checks if Telegram authorization is configured for the account
 func (ai *AuthIntegration) hasTelegramAuth(account config.Account) bool {
 	return account.PhoneNumber != "" &&
-		ai.config.APIId != 0 &&
-		ai.config.APIHash != ""
+		account.APIId != 0 &&
+		account.APIHash != ""
 }
 
 // needsTelegramAuth checks if Telegram authorization is needed for the account

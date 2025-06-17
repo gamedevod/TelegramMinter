@@ -133,23 +133,8 @@ func (c *CLI) validateConfig() error {
 		errors = append(errors, accountErrors...)
 	}
 
-	// Check Telegram API settings if any account needs Telegram auth
-	needsTelegramAuth := false
-	for _, account := range c.config.Accounts {
-		if account.PhoneNumber != "" && account.AuthToken == "" {
-			needsTelegramAuth = true
-			break
-		}
-	}
-
-	if needsTelegramAuth {
-		if c.config.APIId == 0 {
-			errors = append(errors, "api_id not specified for Telegram authorization")
-		}
-		if c.config.APIHash == "" {
-			errors = append(errors, "api_hash not specified for Telegram authorization")
-		}
-	}
+	// Individual API validation is now handled in validateAccount function
+	// Each account must have its own API credentials
 
 	if len(errors) > 0 {
 		fmt.Println("❌ Configuration errors found:")
@@ -181,9 +166,19 @@ func (c *CLI) validateAccount(num int, account config.Account) []string {
 		errors = append(errors, prefix+": neither phone_number nor auth_token specified")
 	}
 
-	// If phone auth is used, validate phone number
-	if hasPhoneAuth && !strings.HasPrefix(account.PhoneNumber, "+") {
-		errors = append(errors, prefix+": phone number must start with '+'")
+	// If phone auth is used, validate phone number and API credentials
+	if hasPhoneAuth {
+		if !strings.HasPrefix(account.PhoneNumber, "+") {
+			errors = append(errors, prefix+": phone number must start with '+'")
+		}
+
+		// Validate individual API credentials for this account
+		if account.APIId == 0 {
+			errors = append(errors, prefix+": api_id not specified (required for phone authentication)")
+		}
+		if account.APIHash == "" {
+			errors = append(errors, prefix+": api_hash not specified (required for phone authentication)")
+		}
 	}
 
 	// Check seed phrase

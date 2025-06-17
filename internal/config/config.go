@@ -10,7 +10,9 @@ type Account struct {
 	Name      string `json:"name"`
 	AuthToken string `json:"auth_token"`
 
-	// Telegram authentication (only phone number is unique for each account)
+	// Telegram authentication settings (individual for each account)
+	APIId             int    `json:"api_id"`                        // API ID from my.telegram.org (individual for each account)
+	APIHash           string `json:"api_hash"`                      // API Hash from my.telegram.org (individual for each account)
 	PhoneNumber       string `json:"phone_number,omitempty"`        // Phone number for authentication
 	SessionFile       string `json:"session_file,omitempty"`        // Path to session file (optional)
 	TwoFactorPassword string `json:"two_factor_password,omitempty"` // 2FA password (optional, leave empty to prompt)
@@ -64,11 +66,7 @@ type Config struct {
 	TestMode    bool   `json:"test_mode"`
 	TestAddress string `json:"test_address"`
 
-	// Common Telegram settings (for all accounts)
-	APIId   int    `json:"api_id"`   // API ID from my.telegram.org
-	APIHash string `json:"api_hash"` // API Hash from my.telegram.org
-
-	// Accounts
+	// Accounts (each account now has individual API credentials)
 	Accounts []Account `json:"accounts"`
 }
 
@@ -88,6 +86,8 @@ func Default() *Config {
 			{
 				Name:            "Account 1",
 				AuthToken:       "",
+				APIId:           0,  // Your API ID from my.telegram.org
+				APIHash:         "", // Your API Hash from my.telegram.org
 				SeedPhrase:      "",
 				Threads:         1,
 				Collection:      25,
@@ -101,6 +101,8 @@ func Default() *Config {
 			{
 				Name:            "Account 2 (with proxy example)",
 				AuthToken:       "",
+				APIId:           0,  // Your API ID from my.telegram.org
+				APIHash:         "", // Your API Hash from my.telegram.org
 				SeedPhrase:      "",
 				Threads:         1,
 				Collection:      25,
