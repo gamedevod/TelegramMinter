@@ -9,17 +9,19 @@ import (
 	"strings"
 
 	"stickersbot/internal/config"
+	"stickersbot/internal/storage"
 	"stickersbot/internal/telegram"
 )
 
 // AuthIntegration integrates Telegram authentication into the main service
 type AuthIntegration struct {
-	config *config.Config
+	config       *config.Config
+	tokenStorage *storage.TokenStorage
 }
 
 // NewAuthIntegration creates a new integration service
-func NewAuthIntegration(cfg *config.Config) *AuthIntegration {
-	return &AuthIntegration{config: cfg}
+func NewAuthIntegration(cfg *config.Config, ts *storage.TokenStorage) *AuthIntegration {
+	return &AuthIntegration{config: cfg, tokenStorage: ts}
 }
 
 // AuthorizeAccounts performs authorization for all accounts that require it
@@ -68,19 +70,19 @@ func (ai *AuthIntegration) AuthorizeAccounts(ctx context.Context) error {
 				return fmt.Errorf("error authorizing account %s: %w", account.Name, err)
 			}
 
-			// Save received token
+			// Save received token in memory and persist separately
 			ai.config.Accounts[i].AuthToken = bearerToken
+
+			if err := ai.tokenStorage.SetToken(account.Name, bearerToken); err != nil {
+				log.Printf("⚠️  Failed to store token for %s: %v", account.Name, err)
+			}
+
 			log.Printf("✅ Authorization completed for account: %s", account.Name)
 		} else if account.AuthToken != "" {
 			log.Printf("✅ Account %s already has Bearer token", account.Name)
 		} else {
 			log.Printf("⚠️  Account %s is not configured for Telegram authorization", account.Name)
 		}
-	}
-
-	// Save configuration with received tokens
-	if err := ai.saveConfig(); err != nil {
-		log.Printf("⚠️  Failed to save configuration: %v", err)
 	}
 
 	return nil
@@ -119,9 +121,4 @@ func (ai *AuthIntegration) hasTelegramAuth(account config.Account) bool {
 // needsTelegramAuth checks if Telegram authorization is needed for the account
 func (ai *AuthIntegration) needsTelegramAuth(account config.Account) bool {
 	return account.AuthToken == "" && ai.hasTelegramAuth(account)
-}
-
-// saveConfig saves configuration to file
-func (ai *AuthIntegration) saveConfig() error {
-	return ai.config.Save("config.json")
 }

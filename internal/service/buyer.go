@@ -11,6 +11,7 @@ import (
 	"stickersbot/internal/client"
 	"stickersbot/internal/config"
 	"stickersbot/internal/monitor"
+	"stickersbot/internal/storage"
 	"stickersbot/internal/types"
 )
 
@@ -44,6 +45,9 @@ type BuyerService struct {
 	// Token manager
 	tokenManager *TokenManager
 
+	// Separate token storage
+	tokenStorage *storage.TokenStorage
+
 	// Snipe transaction counters per account
 	snipeTransactionCounters map[string]int // Account name -> transaction count
 	snipeCountersMu          sync.RWMutex   // Mutex for snipe counters
@@ -55,7 +59,7 @@ type BuyerService struct {
 }
 
 // NewBuyerService creates a new purchase service
-func NewBuyerService(cfg *config.Config) *BuyerService {
+func NewBuyerService(cfg *config.Config, ts *storage.TokenStorage) *BuyerService {
 	// Create file for transaction logging
 	logFile, err := os.OpenFile("transactions.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
@@ -69,7 +73,8 @@ func NewBuyerService(cfg *config.Config) *BuyerService {
 		statistics:               &types.Statistics{},
 		logChan:                  make(chan string, 1000),
 		transactionLog:           logFile,
-		tokenManager:             NewTokenManager(cfg),
+		tokenManager:             NewTokenManager(cfg, ts),
+		tokenStorage:             ts,
 		snipeTransactionCounters: make(map[string]int),
 		activeAccounts:           make(map[string]bool),
 		totalAccounts:            0,
@@ -93,8 +98,8 @@ func (bs *BuyerService) Start() error {
 	bs.cancel = cancel
 	bs.isRunning = true
 
-	// Create token manager
-	bs.tokenManager = NewTokenManager(bs.config)
+	// Create token manager (recreate with current storage reference)
+	bs.tokenManager = NewTokenManager(bs.config, bs.tokenStorage)
 
 	// Initialize token cache
 	bs.tokenManager.InitializeTokens()

@@ -10,6 +10,7 @@ import (
 
 	"stickersbot/internal/client"
 	"stickersbot/internal/config"
+	"stickersbot/internal/storage"
 	"stickersbot/internal/telegram"
 )
 
@@ -23,11 +24,12 @@ type TokenInfo struct {
 
 // TokenManager manages Bearer tokens for accounts with caching
 type TokenManager struct {
-	config      *config.Config
-	httpClient  *client.HTTPClient
-	tokens      map[string]*TokenInfo // key - account name
-	mutex       sync.RWMutex
-	authService *AuthIntegration
+	config       *config.Config
+	httpClient   *client.HTTPClient
+	tokens       map[string]*TokenInfo // key - account name
+	mutex        sync.RWMutex
+	authService  *AuthIntegration
+	tokenStorage *storage.TokenStorage
 
 	// Cache settings
 	tokenTTL      time.Duration // Token lifetime (default 40 minutes)
@@ -35,15 +37,34 @@ type TokenManager struct {
 }
 
 // NewTokenManager creates a new token manager
-func NewTokenManager(cfg *config.Config) *TokenManager {
-	return &TokenManager{
+func NewTokenManager(cfg *config.Config, ts *storage.TokenStorage) *TokenManager {
+	tm := &TokenManager{
 		config:        cfg,
 		httpClient:    client.New(),
 		tokens:        make(map[string]*TokenInfo),
-		authService:   NewAuthIntegration(cfg),
+		tokenStorage:  ts,
 		tokenTTL:      40 * time.Minute, // Tokens live ~45 minutes, refresh 5 minutes before expiration
 		checkCooldown: 1 * time.Minute,  // Don't check more often than once per minute
 	}
+
+	// AuthIntegration тоже нуждается в tokenStorage
+	tm.authService = NewAuthIntegration(cfg, ts)
+
+	// Инициализируем кэш токенов данными из хранилища
+	for i, acc := range cfg.Accounts {
+		if token, ok := ts.GetToken(acc.Name); ok {
+			tm.tokens[acc.Name] = &TokenInfo{
+				Token:     token,
+				ExpiresAt: time.Now().Add(tm.tokenTTL),
+				IsValid:   true,
+				LastCheck: time.Now(),
+			}
+			// обновляем значение в конфиге по индексу
+			cfg.Accounts[i].AuthToken = token
+		}
+	}
+
+	return tm
 }
 
 // GetCachedToken returns cached token without API check
@@ -154,15 +175,12 @@ func (tm *TokenManager) RefreshTokenOnError(accountName string, statusCode int) 
 		return "", fmt.Errorf("received invalid temporary token for %s", accountName)
 	}
 
-	// Save new token to configuration
+	// Сохраняем токен в памяти и в отдельном хранилище
 	tm.config.Accounts[accountIndex].AuthToken = newToken
 
-	// Save configuration in background (don't block main thread)
-	go func() {
-		if err := tm.config.Save("config.json"); err != nil {
-			log.Printf("⚠️ Failed to save configuration: %v", err)
-		}
-	}()
+	if err := tm.tokenStorage.SetToken(account.Name, newToken); err != nil {
+		log.Printf("⚠️ Failed to persist token for %s: %v", account.Name, err)
+	}
 
 	// Update cache
 	tm.tokens[accountName] = &TokenInfo{
@@ -308,8 +326,8 @@ func (tm *TokenManager) ForceRefreshToken(accountName string) (string, error) {
 	tm.config.Accounts[accountIndex].AuthToken = newToken
 
 	// Save configuration
-	if err := tm.config.Save("config.json"); err != nil {
-		log.Printf("⚠️ Failed to save configuration: %v", err)
+	if err := tm.tokenStorage.SetToken(account.Name, newToken); err != nil {
+		log.Printf("⚠️ Failed to persist token for %s: %v", account.Name, err)
 	}
 
 	// Update cache

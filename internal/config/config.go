@@ -7,9 +7,9 @@ import (
 
 // Account structure for individual account
 type Account struct {
-	Name      string `json:"name"`
-	AuthToken string `json:"auth_token"`
-
+	Name string `json:"name"`
+	// Bearer-токен хранится отдельно, но поле нужно для работы кода
+	AuthToken string `json:"-"`
 	// Telegram authentication settings (individual for each account)
 	APIId             int    `json:"api_id"`                        // API ID from my.telegram.org (individual for each account)
 	APIHash           string `json:"api_hash"`                      // API Hash from my.telegram.org (individual for each account)
@@ -79,7 +79,6 @@ func Default() *Config {
 		Accounts: []Account{
 			{
 				Name:            "Account 1",
-				AuthToken:       "",
 				APIId:           0,  // Your API ID from my.telegram.org
 				APIHash:         "", // Your API Hash from my.telegram.org
 				SeedPhrase:      "",
@@ -94,7 +93,6 @@ func Default() *Config {
 			},
 			{
 				Name:            "Account 2 (with proxy example)",
-				AuthToken:       "",
 				APIId:           0,  // Your API ID from my.telegram.org
 				APIHash:         "", // Your API Hash from my.telegram.org
 				SeedPhrase:      "",

@@ -13,6 +13,7 @@ import (
 	"stickersbot/internal/client"
 	"stickersbot/internal/config"
 	"stickersbot/internal/service"
+	"stickersbot/internal/storage"
 )
 
 // CLI represents the command line interface
@@ -22,6 +23,7 @@ type CLI struct {
 	buyerService    *service.BuyerService
 	tokenManager    *service.TokenManager
 	walletService   *service.WalletService
+	tokenStorage    *storage.TokenStorage
 	isRunning       bool
 	stopChan        chan struct{}
 }
@@ -103,7 +105,27 @@ func (c *CLI) initializeConfig() error {
 	}
 
 	fmt.Printf("📋 Configuration loaded: %s\n", cfgPath)
+
+	// Загружаем хранилище токенов и подмешиваем токены в конфиг
+	ts, err := storage.NewTokenStorage("tokens.json")
+	if err != nil {
+		return fmt.Errorf("loading token storage: %w", err)
+	}
+
+	// Проставляем токены в конфиг, если они есть в хранилище
+	for i, account := range cfg.Accounts {
+		if token, ok := ts.GetToken(account.Name); ok {
+			cfg.Accounts[i].AuthToken = token
+		} else if account.AuthToken != "" {
+			// Миграция: переносим токен из конфига в отдельное хранилище
+			if err := ts.SetToken(account.Name, account.AuthToken); err == nil {
+				fmt.Printf("🔄 Migrated token for account '%s' to tokens.json\n", account.Name)
+			}
+		}
+	}
+
 	c.config = cfg
+	c.tokenStorage = ts
 
 	// Validate configuration
 	if err := c.validateConfig(); err != nil {
@@ -291,7 +313,7 @@ func (c *CLI) checkLicense() error {
 // initializeServices initializes all required services
 func (c *CLI) initializeServices() error {
 	// Create authorization service
-	c.authIntegration = service.NewAuthIntegration(c.config)
+	c.authIntegration = service.NewAuthIntegration(c.config, c.tokenStorage)
 
 	// Validate Telegram authorization settings
 	if errors := c.authIntegration.ValidateAccounts(); len(errors) > 0 {
@@ -308,10 +330,10 @@ func (c *CLI) initializeServices() error {
 	}
 
 	// Create token manager
-	c.tokenManager = service.NewTokenManager(c.config)
+	c.tokenManager = service.NewTokenManager(c.config, c.tokenStorage)
 
 	// Create buyer service
-	c.buyerService = service.NewBuyerService(c.config)
+	c.buyerService = service.NewBuyerService(c.config, c.tokenStorage)
 
 	// Create wallet service
 	c.walletService = service.NewWalletService(c.config)
