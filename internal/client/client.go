@@ -34,7 +34,7 @@ type HTTPClient struct {
 	client tls_client.HttpClient
 }
 
-// New creates a new HTTP client
+// New creates a new HTTP client without proxy
 func New() *HTTPClient {
 	jar := tls_client.NewCookieJar()
 	options := []tls_client.HttpClientOption{
@@ -53,6 +53,61 @@ func New() *HTTPClient {
 	return &HTTPClient{
 		client: client,
 	}
+}
+
+// NewWithProxy creates a new HTTP client with proxy support
+// proxyURL format: host:port:user:pass
+func NewWithProxy(proxyURL string) (*HTTPClient, error) {
+	jar := tls_client.NewCookieJar()
+
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(30),
+		tls_client.WithClientProfile(profiles.Chrome_120),
+		tls_client.WithRandomTLSExtensionOrder(),
+		tls_client.WithNotFollowRedirects(),
+		tls_client.WithCookieJar(jar),
+	}
+
+	// Parse proxy URL if provided
+	if proxyURL != "" {
+		proxyURLParsed, err := parseProxyURL(proxyURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid proxy URL: %v", err)
+		}
+		options = append(options, tls_client.WithProxyUrl(proxyURLParsed))
+	}
+
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating HTTP client with proxy: %v", err)
+	}
+
+	return &HTTPClient{
+		client: client,
+	}, nil
+}
+
+// parseProxyURL parses proxy URL from format host:port:user:pass to standard URL
+func parseProxyURL(proxyURL string) (string, error) {
+	parts := strings.Split(proxyURL, ":")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid proxy format, expected host:port or host:port:user:pass")
+	}
+
+	host := parts[0]
+	port := parts[1]
+
+	if len(parts) == 2 {
+		// No authentication
+		return fmt.Sprintf("http://%s:%s", host, port), nil
+	} else if len(parts) == 4 {
+		// With authentication
+		user := parts[2]
+		pass := parts[3]
+		return fmt.Sprintf("http://%s:%s@%s:%s", user, pass, host, port), nil
+	}
+
+	return "", fmt.Errorf("invalid proxy format, expected host:port or host:port:user:pass")
 }
 
 // Get performs a GET request
@@ -191,6 +246,11 @@ func (c *HTTPClient) BuyStickers(authToken string, collection, character int, cu
 
 // BuyStickersAndPay buys stickers and sends TON transaction
 func (c *HTTPClient) BuyStickersAndPay(authToken string, collection, character int, currency string, count int, seedPhrase string, testMode bool, testAddress string) (*BuyStickersResponse, error) {
+	return c.BuyStickersAndPayWithProxy(authToken, collection, character, currency, count, seedPhrase, testMode, testAddress, false, "")
+}
+
+// BuyStickersAndPayWithProxy buys stickers and sends TON transaction with proxy support
+func (c *HTTPClient) BuyStickersAndPayWithProxy(authToken string, collection, character int, currency string, count int, seedPhrase string, testMode bool, testAddress string, useProxy bool, proxyURL string) (*BuyStickersResponse, error) {
 	// First buy stickers
 	response, err := c.BuyStickers(authToken, collection, character, currency, count)
 	if err != nil {
@@ -202,8 +262,8 @@ func (c *HTTPClient) BuyStickersAndPay(authToken string, collection, character i
 		return response, nil
 	}
 
-	// Create TON client
-	tonClient, err := NewTONClient(seedPhrase)
+	// Create TON client with proxy support
+	tonClient, err := NewTONClientWithProxy(seedPhrase, useProxy, proxyURL)
 	if err != nil {
 		return response, fmt.Errorf("error creating TON client: %v", err)
 	}
@@ -234,4 +294,12 @@ func (c *HTTPClient) BuyStickersAndPay(authToken string, collection, character i
 	response.TransactionResult = txResult
 
 	return response, nil
+}
+
+// NewForAccount creates HTTP client with account-specific proxy settings
+func NewForAccount(useProxy bool, proxyURL string) (*HTTPClient, error) {
+	if useProxy && proxyURL != "" {
+		return NewWithProxy(proxyURL)
+	}
+	return New(), nil
 }

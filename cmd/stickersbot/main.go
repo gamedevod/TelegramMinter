@@ -198,39 +198,70 @@ func (c *CLI) validateAccount(num int, account config.Account) []string {
 
 	// Check threads
 	if account.Threads <= 0 {
-		errors = append(errors, prefix+": threads count must be greater than 0")
-	}
-	if account.Threads > 10 {
-		errors = append(errors, prefix+": recommended no more than 10 threads")
+		errors = append(errors, prefix+": threads must be greater than 0")
 	}
 
-	// Check snipe monitor vs direct purchase mode
-	if account.SnipeMonitor != nil && account.SnipeMonitor.Enabled {
-		// Snipe monitor mode - collection/character are ignored
-		if account.SnipeMonitor.SupplyRange == nil && account.SnipeMonitor.PriceRange == nil && len(account.SnipeMonitor.WordFilter) == 0 {
-			errors = append(errors, prefix+": in snipe monitor mode at least one filter must be specified")
+	// Check proxy settings
+	if account.UseProxy {
+		if account.ProxyURL == "" {
+			errors = append(errors, prefix+": use_proxy is enabled but proxy_url is not specified")
+		} else {
+			// Validate proxy URL format
+			if err := validateProxyURL(account.ProxyURL); err != nil {
+				errors = append(errors, prefix+": "+err.Error())
+			}
 		}
-	} else {
-		// Direct purchase mode - collection/character are required
-		if account.Collection <= 0 {
-			errors = append(errors, prefix+": in direct purchase mode collection > 0 must be specified")
-		}
-		if account.Character <= 0 {
-			errors = append(errors, prefix+": in direct purchase mode character > 0 must be specified")
-		}
+	}
+
+	// Check collection and character
+	if account.Collection <= 0 {
+		errors = append(errors, prefix+": collection must be greater than 0")
 	}
 
 	// Check currency
-	if account.Currency != "TON" {
-		errors = append(errors, prefix+": only TON currency is supported")
+	if account.Currency == "" {
+		errors = append(errors, prefix+": currency not specified")
 	}
 
 	// Check count
 	if account.Count <= 0 {
-		errors = append(errors, prefix+": purchase count must be greater than 0")
+		errors = append(errors, prefix+": count must be greater than 0")
 	}
 
 	return errors
+}
+
+// validateProxyURL validates proxy URL format
+func validateProxyURL(proxyURL string) error {
+	parts := strings.Split(proxyURL, ":")
+	if len(parts) != 2 && len(parts) != 4 {
+		return fmt.Errorf("invalid proxy URL format, expected host:port or host:port:user:pass")
+	}
+
+	// Validate host
+	if parts[0] == "" {
+		return fmt.Errorf("proxy host cannot be empty")
+	}
+
+	// Validate port
+	if parts[1] == "" {
+		return fmt.Errorf("proxy port cannot be empty")
+	}
+	if _, err := strconv.Atoi(parts[1]); err != nil {
+		return fmt.Errorf("proxy port must be a number")
+	}
+
+	// If auth is provided, validate user and pass
+	if len(parts) == 4 {
+		if parts[2] == "" {
+			return fmt.Errorf("proxy username cannot be empty when authentication is provided")
+		}
+		if parts[3] == "" {
+			return fmt.Errorf("proxy password cannot be empty when authentication is provided")
+		}
+	}
+
+	return nil
 }
 
 // checkLicense performs license validation (currently disabled for development)
@@ -634,6 +665,7 @@ func (c *CLI) printAccountStatuses(statuses []AccountStatus) {
 	fmt.Println(strings.Repeat("-", 80))
 
 	for _, status := range statuses {
+		account := c.config.Accounts[status.Index]
 		fmt.Printf("Account %d: %s\n", status.Index+1, status.Name)
 
 		if status.PhoneNumber != "" {
@@ -659,6 +691,17 @@ func (c *CLI) printAccountStatuses(statuses []AccountStatus) {
 				cleanPhone := strings.ReplaceAll(status.PhoneNumber, "+", "")
 				fmt.Printf("   🔍 Searched for: %s.session, %s.session\n", status.PhoneNumber, cleanPhone)
 			}
+		}
+
+		// Proxy status
+		if account.UseProxy && account.ProxyURL != "" {
+			// Mask proxy for security (show first part of host)
+			maskedProxy := maskProxyURL(account.ProxyURL)
+			fmt.Printf("   🌐 Proxy: ✅ Enabled (%s)\n", maskedProxy)
+		} else if account.UseProxy && account.ProxyURL == "" {
+			fmt.Printf("   🌐 Proxy: ⚠️  Enabled but URL not set\n")
+		} else {
+			fmt.Printf("   🌐 Proxy: ❌ Disabled\n")
 		}
 
 		// Overall status
@@ -1022,4 +1065,12 @@ func (c *CLI) deployWallets(accountIndices []int) {
 	fmt.Printf("🎉 Deployment completed! Success: %d/%d\n", successCount, len(accountIndices))
 	fmt.Print("Press Enter to continue...")
 	bufio.NewReader(os.Stdin).ReadLine()
+}
+
+// maskProxyURL masks proxy URL for display
+func maskProxyURL(url string) string {
+	if len(url) < 4 {
+		return strings.Repeat("*", len(url))
+	}
+	return url[:3] + strings.Repeat("*", len(url)-6) + url[len(url)-3:]
 }

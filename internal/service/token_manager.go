@@ -189,13 +189,15 @@ func (tm *TokenManager) refreshTokenViaTelegram(account *config.Account) (string
 		sessionFile = fmt.Sprintf("sessions/%s.session", cleanPhone)
 	}
 
-	// Create authentication service
-	authService := telegram.NewAuthService(
+	// Create authentication service with proxy support
+	authService := telegram.NewAuthServiceWithProxy(
 		tm.config.APIId,
 		tm.config.APIHash,
 		account.PhoneNumber,
 		sessionFile,
 		account.TwoFactorPassword,
+		account.UseProxy,
+		account.ProxyURL,
 	)
 
 	// Execute authentication with timeout

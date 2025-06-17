@@ -351,31 +351,64 @@ type WalletManager struct {
 	client *ton.APIClient
 }
 
-var globalWalletManager *WalletManager
-var managerOnce sync.Once
+// WalletManagerKey key for wallet manager instances
+type WalletManagerKey struct {
+	UseProxy bool
+	ProxyURL string
+}
 
-// getWalletManager returns global wallet manager instance
-func getWalletManager() *WalletManager {
-	managerOnce.Do(func() {
-		// Connect to TON mainnet
-		connection := liteclient.NewConnectionPool()
+var globalWalletManagers = make(map[WalletManagerKey]*WalletManager)
+var managersOnce sync.Once
+var managersMu sync.RWMutex
 
-		// Add public configurations
-		configUrl := "https://ton.org/global.config.json"
-		err := connection.AddConnectionsFromConfigUrl(context.Background(), configUrl)
-		if err != nil {
-			panic(fmt.Errorf("error connecting to TON: %v", err))
-		}
+// getWalletManager returns wallet manager instance for specific proxy settings
+func getWalletManager(useProxy bool, proxyURL string) *WalletManager {
+	key := WalletManagerKey{UseProxy: useProxy, ProxyURL: proxyURL}
 
-		// Create API client
-		client := ton.NewAPIClient(connection)
+	managersMu.RLock()
+	if manager, exists := globalWalletManagers[key]; exists {
+		managersMu.RUnlock()
+		return manager
+	}
+	managersMu.RUnlock()
 
-		globalWalletManager = &WalletManager{
-			queues: make(map[string]*TransactionQueue),
-			client: client,
-		}
-	})
-	return globalWalletManager
+	managersMu.Lock()
+	defer managersMu.Unlock()
+
+	// Double check after getting write lock
+	if manager, exists := globalWalletManagers[key]; exists {
+		return manager
+	}
+
+	// Create new manager
+	manager := createWalletManager(useProxy, proxyURL)
+	globalWalletManagers[key] = manager
+	return manager
+}
+
+// createWalletManager creates a new wallet manager with optional proxy
+func createWalletManager(useProxy bool, proxyURL string) *WalletManager {
+	// Connect to TON mainnet
+	connection := liteclient.NewConnectionPool()
+
+	// TODO: Add proxy support to liteclient when available
+	// For now, note that TON liteclient doesn't support proxy directly
+	// This would require custom implementation or waiting for library update
+
+	// Add public configurations
+	configUrl := "https://ton.org/global.config.json"
+	err := connection.AddConnectionsFromConfigUrl(context.Background(), configUrl)
+	if err != nil {
+		panic(fmt.Errorf("error connecting to TON: %v", err))
+	}
+
+	// Create API client
+	client := ton.NewAPIClient(connection)
+
+	return &WalletManager{
+		queues: make(map[string]*TransactionQueue),
+		client: client,
+	}
 }
 
 // getOrCreateQueue gets or creates transaction queue for seed phrase
@@ -409,11 +442,18 @@ func (wm *WalletManager) getOrCreateQueue(seedPhrase string) (*TransactionQueue,
 type TONClient struct {
 	queue      *TransactionQueue
 	seedPhrase string
+	useProxy   bool
+	proxyURL   string
 }
 
-// NewTONClient creates a new TON client
+// NewTONClient creates a new TON client without proxy
 func NewTONClient(seedPhrase string) (*TONClient, error) {
-	wm := getWalletManager()
+	return NewTONClientWithProxy(seedPhrase, false, "")
+}
+
+// NewTONClientWithProxy creates a new TON client with proxy support
+func NewTONClientWithProxy(seedPhrase string, useProxy bool, proxyURL string) (*TONClient, error) {
+	wm := getWalletManager(useProxy, proxyURL)
 
 	// Get or create queue for this seed phrase
 	queue, err := wm.getOrCreateQueue(seedPhrase)
@@ -424,6 +464,8 @@ func NewTONClient(seedPhrase string) (*TONClient, error) {
 	return &TONClient{
 		queue:      queue,
 		seedPhrase: seedPhrase,
+		useProxy:   useProxy,
+		proxyURL:   proxyURL,
 	}, nil
 }
 
@@ -452,7 +494,7 @@ func (c *TONClient) SendTON(ctx context.Context, toAddress string, amount int64,
 
 // GetBalance gets wallet balance
 func (c *TONClient) GetBalance(ctx context.Context) (*big.Int, error) {
-	wm := getWalletManager()
+	wm := getWalletManager(c.useProxy, c.proxyURL)
 	block, err := wm.client.CurrentMasterchainInfo(ctx)
 	if err != nil {
 		return nil, err

@@ -24,11 +24,22 @@ type WebAppService struct {
 
 // NewWebAppService creates a new Web App service
 func NewWebAppService(api *tg.Client, botUsername, webAppURL string) *WebAppService {
+	return NewWebAppServiceWithProxy(api, botUsername, webAppURL, false, "")
+}
+
+// NewWebAppServiceWithProxy creates a new Web App service with proxy support
+func NewWebAppServiceWithProxy(api *tg.Client, botUsername, webAppURL string, useProxy bool, proxyURL string) *WebAppService {
+	httpClient, err := client.NewForAccount(useProxy, proxyURL)
+	if err != nil {
+		// Fallback to regular client if proxy fails
+		httpClient = client.New()
+	}
+
 	return &WebAppService{
 		api:         api,
 		botUsername: botUsername,
 		webAppURL:   webAppURL,
-		httpClient:  client.New(), // use existing HTTP client
+		httpClient:  httpClient,
 	}
 }
 

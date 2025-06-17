@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -15,7 +16,9 @@ import (
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
+	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
+	"golang.org/x/net/proxy"
 )
 
 // AuthService structure for Telegram authorization
@@ -25,17 +28,26 @@ type AuthService struct {
 	PhoneNumber       string
 	SessionFile       string
 	TwoFactorPassword string // 2FA password, if empty - will prompt user
+	UseProxy          bool   // Whether to use proxy
+	ProxyURL          string // Proxy URL in format host:port:user:pass
 	client            *telegram.Client
 }
 
 // NewAuthService creates a new authorization service
 func NewAuthService(apiId int, apiHash, phoneNumber, sessionFile, twoFactorPassword string) *AuthService {
+	return NewAuthServiceWithProxy(apiId, apiHash, phoneNumber, sessionFile, twoFactorPassword, false, "")
+}
+
+// NewAuthServiceWithProxy creates a new authorization service with proxy support
+func NewAuthServiceWithProxy(apiId int, apiHash, phoneNumber, sessionFile, twoFactorPassword string, useProxy bool, proxyURL string) *AuthService {
 	return &AuthService{
 		APIId:             apiId,
 		APIHash:           apiHash,
 		PhoneNumber:       phoneNumber,
 		SessionFile:       sessionFile,
 		TwoFactorPassword: twoFactorPassword,
+		UseProxy:          useProxy,
+		ProxyURL:          proxyURL,
 	}
 }
 
@@ -46,10 +58,26 @@ func (a *AuthService) AuthorizeAndGetToken(ctx context.Context) (string, error) 
 		Path: a.SessionFile,
 	}
 
-	// Create client
-	a.client = telegram.NewClient(a.APIId, a.APIHash, telegram.Options{
+	// Create client options
+	clientOptions := telegram.Options{
 		SessionStorage: sessionStorage,
-	})
+	}
+
+	// Add proxy support if enabled
+	if a.UseProxy && a.ProxyURL != "" {
+		dialFunc, err := createProxyDialFunc(a.ProxyURL)
+		if err != nil {
+			return "", fmt.Errorf("invalid proxy URL: %v", err)
+		}
+
+		// Use dcs.Plain with proxy dial function
+		clientOptions.Resolver = dcs.Plain(dcs.PlainOptions{
+			Dial: dialFunc,
+		})
+	}
+
+	// Create client
+	a.client = telegram.NewClient(a.APIId, a.APIHash, clientOptions)
 
 	var bearerToken string
 
@@ -219,7 +247,7 @@ func (a *AuthService) generateBearerToken(ctx context.Context, user *tg.User) (s
 
 	// 1. Get auth data (analog of get_auth_data from Python)
 	log.Printf("🔄 Getting auth data for bot %s...", botUsername)
-	webAppService := NewWebAppService(api, botUsername, webAppURL)
+	webAppService := NewWebAppServiceWithProxy(api, botUsername, webAppURL, a.UseProxy, a.ProxyURL)
 	authResponse, err := webAppService.GetAuthData(ctx, botUsername, webAppURL)
 	if err != nil {
 		log.Printf("❌ Error getting auth data: %v", err)
@@ -325,4 +353,58 @@ func (a *AuthService) requestTokenFromYourAPI(userID int64) (string, error) {
 	// return result.Token, nil
 
 	return "", fmt.Errorf("method not implemented - add your token retrieval logic")
+}
+
+// createProxyDialFunc creates dial function for proxy connection
+// proxyURL format: host:port:user:pass
+func createProxyDialFunc(proxyURL string) (func(ctx context.Context, network, addr string) (net.Conn, error), error) {
+	parts := strings.Split(proxyURL, ":")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid proxy format, expected host:port or host:port:user:pass")
+	}
+
+	host := parts[0]
+	port := parts[1]
+	proxyAddr := net.JoinHostPort(host, port)
+
+	if len(parts) == 2 {
+		// No authentication - use SOCKS5 without auth
+		dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create SOCKS5 proxy: %v", err)
+		}
+
+		if contextDialer, ok := dialer.(proxy.ContextDialer); ok {
+			return contextDialer.DialContext, nil
+		}
+
+		// Fallback for non-context dialers
+		return func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.Dial(network, addr)
+		}, nil
+	} else if len(parts) == 4 {
+		// With authentication
+		user := parts[2]
+		pass := parts[3]
+		auth := &proxy.Auth{
+			User:     user,
+			Password: pass,
+		}
+
+		dialer, err := proxy.SOCKS5("tcp", proxyAddr, auth, proxy.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create SOCKS5 proxy with auth: %v", err)
+		}
+
+		if contextDialer, ok := dialer.(proxy.ContextDialer); ok {
+			return contextDialer.DialContext, nil
+		}
+
+		// Fallback for non-context dialers
+		return func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.Dial(network, addr)
+		}, nil
+	}
+
+	return nil, fmt.Errorf("invalid proxy format, expected host:port or host:port:user:pass")
 }

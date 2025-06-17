@@ -23,6 +23,10 @@ type Account struct {
 	Count           int    `json:"count"`
 	MaxTransactions int    `json:"max_transactions"` // Maximum number of successful transactions
 
+	// Proxy settings (individual for each account)
+	UseProxy bool   `json:"use_proxy,omitempty"` // Whether to use proxy for this account
+	ProxyURL string `json:"proxy_url,omitempty"` // Proxy URL in format host:port:user:pass
+
 	// Snipe monitor settings
 	SnipeMonitor *SnipeMonitorConfig `json:"snipe_monitor,omitempty"`
 }
@@ -91,6 +95,21 @@ func Default() *Config {
 				Currency:        "TON",
 				Count:           5,
 				MaxTransactions: 10, // Default 10 transactions
+				UseProxy:        false,
+				ProxyURL:        "", // Example: "proxy.example.com:1080:username:password"
+			},
+			{
+				Name:            "Account 2 (with proxy example)",
+				AuthToken:       "",
+				SeedPhrase:      "",
+				Threads:         1,
+				Collection:      25,
+				Character:       1,
+				Currency:        "TON",
+				Count:           5,
+				MaxTransactions: 10,
+				UseProxy:        false,                                      // Set to true to enable proxy
+				ProxyURL:        "proxy.example.com:1080:username:password", // Example proxy URL
 			},
 		},
 	}

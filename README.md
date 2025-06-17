@@ -192,6 +192,100 @@ In the `config.json` file you will see an empty template. Fill it with your data
 - **`seed_phrase`** - TON wallet seed phrase (12-24 words separated by spaces)
 - **`snipe_monitor`** - Snipe monitoring settings (optional)
 
+## 🌐 Proxy Settings
+
+Each account now supports individual proxy settings. All connections for the account (Telegram, HTTP requests, TON RPC) will use the specified proxy.
+
+### Setting up proxy for an account
+
+In the `config.json` file, add the following fields for each account:
+
+```json
+{
+  "accounts": [
+    {
+      "name": "Account 1 with proxy",
+      "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
+      // ... other account settings
+    }
+  ]
+}
+```
+
+### Proxy URL format
+
+Two formats are supported:
+
+1. **Without authentication:** `host:port`
+   ```json
+   "proxy_url": "192.168.1.100:1080"
+   ```
+
+2. **With authentication:** `host:port:username:password`
+   ```json
+   "proxy_url": "proxy.example.com:1080:myuser:mypass"
+   ```
+
+### Proxy parameters
+
+- `use_proxy` (boolean) - enable/disable proxy for the account
+- `proxy_url` (string) - proxy address in the specified format
+
+### What uses proxy
+
+When proxy is enabled for an account, the following go through it:
+- ✅ Telegram connections (authorization, token retrieval)
+- ✅ HTTP requests to API (sticker purchases)
+- ✅ TON RPC connections (transaction sending)
+- ✅ New collection monitoring requests
+
+### Example configuration
+
+```json
+{
+  "api_id": 12345,
+  "api_hash": "your_api_hash",
+  "accounts": [
+    {
+      "name": "Account 1 - Direct",
+      "phone_number": "+1234567890",
+      "seed_phrase": "your 24 word seed phrase here",
+      "use_proxy": false,
+      "threads": 1,
+      "collection": 25,
+      "character": 1,
+      "currency": "TON",
+      "count": 5
+    },
+    {
+      "name": "Account 2 - With Proxy",
+      "phone_number": "+1234567891", 
+      "seed_phrase": "another 24 word seed phrase here",
+      "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
+      "threads": 1,
+      "collection": 25,
+      "character": 1,
+      "currency": "TON",
+      "count": 5
+    }
+  ]
+}
+```
+
+### Supported protocols
+
+- SOCKS5 proxy (recommended)
+- HTTP proxy for web requests
+
+### Notes
+
+- Each account can have its own proxy or work without proxy
+- Proxy settings apply to all types of account connections
+- In case of proxy connection error, the application will show a corresponding message
+- TON RPC connections support proxy partially (liteclient library limitation)
+
 ## ⚙️ Operating Modes
 
 > **⚠️ IMPORTANT:** The program has two fundamentally different operating modes depending on the `snipe_monitor` setting!
@@ -519,35 +613,4 @@ After launching the program, you will see an interactive CLI menu with 5 main op
 - Contact support to check license status
 
 ### "Authorization error":
-- Check the correctness of `api_id` and `api_hash`
-- Make sure the phone number is specified with country code
-
-### "Invalid auth token":
-- This is normal, the program will update the token automatically
-- If the error repeats, check bot settings
-
-### Program doesn't buy:
-- Check that `test_mode: false` for real purchases
-- Make sure there's TON in the wallet
-- Check the correctness of `collection` and `character` IDs
-
-## 📞 Support
-
-If you encounter problems:
-1. Check all settings in `config.json`
-2. Make sure you're using the correct API keys
-3. Try in test mode first
-4. Check program logs for errors
-
-**Need help?** Contact our support team:
-- 📧 Support: [@black_beard68](https://t.me/black_beard68)
-- 📢 Channel: [@two_on_deck](https://t.me/two_on_deck)
-- ⚓ Team: **DUO ON DECK** - "Two minds, one mission!"
-
----
-
-**⚠️ WARNING**: This program works with real money (TON). Always test in `test_mode` first before using in production!
-
----
-*Developed with ❤️ by DUO ON DECK Team*  
-*🌊 Sailing the crypto seas since 2024* 
+- Check the correctness of `

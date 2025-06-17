@@ -264,6 +264,7 @@
                     <li><a href="#quick-start-ru">🚀 Быстрый старт</a></li>
                     <li><a href="#telegram-api-ru">🔑 Получение API ключей Telegram</a></li>
                     <li><a href="#config-ru">⚙️ Настройка конфигурации</a></li>
+                    <li><a href="#proxy-ru">🌐 Настройки прокси</a></li>
                     <li><a href="#modes-ru">🎯 Режимы работы</a></li>
                     <li><a href="#menu-guide-ru">🎮 Руководство по меню</a></li>
                 </ul>
@@ -493,6 +494,120 @@
                         <td>Настройки снайп мониторинга (опционально)</td>
                     </tr>
                 </table>
+            </div>
+            
+            <div class="section" id="proxy-ru">
+                <h2><span class="emoji">🌐</span> Настройки прокси</h2>
+                
+                <div class="info">
+                    <strong><span class="emoji">ℹ️</span> Информация:</strong> Каждый аккаунт теперь поддерживает индивидуальные настройки прокси. Все подключения аккаунта (Telegram, HTTP-запросы, TON RPC) будут использовать указанный прокси.
+                </div>
+                
+                <h3><span class="emoji">🔧</span> Настройка прокси для аккаунта</h3>
+                <p>В файле <code>config.json</code> добавьте следующие поля для каждого аккаунта:</p>
+                
+                <div class="code-block">
+{
+  "accounts": [
+    {
+      "name": "Аккаунт 1 с прокси",
+      "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
+      // ... остальные настройки аккаунта
+    }
+  ]
+}
+                </div>
+                
+                <h3><span class="emoji">📝</span> Формат URL прокси</h3>
+                <p>Поддерживается два формата:</p>
+                
+                <h4>1. Без аутентификации: <code>host:port</code></h4>
+                <div class="code-block">
+"proxy_url": "192.168.1.100:1080"
+                </div>
+                
+                <h4>2. С аутентификацией: <code>host:port:username:password</code></h4>
+                <div class="code-block">
+"proxy_url": "proxy.example.com:1080:myuser:mypass"
+                </div>
+                
+                <h3><span class="emoji">⚙️</span> Параметры прокси</h3>
+                <table>
+                    <tr>
+                        <th>Параметр</th>
+                        <th>Тип</th>
+                        <th>Описание</th>
+                    </tr>
+                    <tr>
+                        <td><code>use_proxy</code></td>
+                        <td>boolean</td>
+                        <td>Включить/выключить прокси для аккаунта</td>
+                    </tr>
+                    <tr>
+                        <td><code>proxy_url</code></td>
+                        <td>string</td>
+                        <td>Адрес прокси в указанном формате</td>
+                    </tr>
+                </table>
+                
+                <h3><span class="emoji">🔗</span> Что использует прокси</h3>
+                <p>При включенном прокси для аккаунта через него проходят:</p>
+                <ul>
+                    <li><span class="emoji">✅</span> Подключения к Telegram (авторизация, получение токенов)</li>
+                    <li><span class="emoji">✅</span> HTTP-запросы к API (покупка стикеров)</li>
+                    <li><span class="emoji">✅</span> TON RPC подключения (отправка транзакций)</li>
+                    <li><span class="emoji">✅</span> Запросы мониторинга новых коллекций</li>
+                </ul>
+                
+                <h3><span class="emoji">📋</span> Пример конфигурации</h3>
+                <div class="code-block">
+{
+  "api_id": 12345,
+  "api_hash": "your_api_hash",
+  "accounts": [
+    {
+      "name": "Аккаунт 1 - Прямой",
+      "phone_number": "+79123456789",
+      "seed_phrase": "your 24 word seed phrase here",
+      "use_proxy": false,
+      "threads": 1,
+      "collection": 25,
+      "character": 1,
+      "currency": "TON",
+      "count": 5
+    },
+    {
+      "name": "Аккаунт 2 - С прокси",
+      "phone_number": "+79123456790", 
+      "seed_phrase": "another 24 word seed phrase here",
+      "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
+      "threads": 1,
+      "collection": 25,
+      "character": 1,
+      "currency": "TON",
+      "count": 5
+    }
+  ]
+}
+                </div>
+                
+                <h3><span class="emoji">🛡️</span> Поддерживаемые протоколы</h3>
+                <ul>
+                    <li><strong>SOCKS5</strong> прокси (рекомендуется)</li>
+                    <li><strong>HTTP</strong> прокси для веб-запросов</li>
+                </ul>
+                
+                <h3><span class="emoji">📝</span> Примечания</h3>
+                <div class="highlight">
+                    <ul>
+                        <li>Каждый аккаунт может иметь свой прокси или работать без прокси</li>
+                        <li>Настройки прокси применяются ко всем типам подключений аккаунта</li>
+                        <li>При ошибке подключения к прокси приложение покажет соответствующее сообщение</li>
+                        <li>TON RPC подключения поддерживают прокси частично (ограничение библиотеки liteclient)</li>
+                    </ul>
+                </div>
             </div>
             
             <div class="section" id="modes-ru">
@@ -863,6 +978,7 @@
                     <li><a href="#quick-start-en">🚀 Quick Start</a></li>
                     <li><a href="#telegram-api-en">🔑 Getting Telegram API Keys</a></li>
                     <li><a href="#config-en">⚙️ Configuration Setup</a></li>
+                    <li><a href="#proxy-en">🌐 Proxy Settings</a></li>
                     <li><a href="#modes-en">🎯 Operating Modes</a></li>
                     <li><a href="#menu-guide-en">🎮 Application Menu Guide</a></li>
                 </ul>
@@ -1092,6 +1208,120 @@
                         <td>Snipe monitoring settings (optional)</td>
                     </tr>
                 </table>
+            </div>
+            
+            <div class="section" id="proxy-en">
+                <h2><span class="emoji">🌐</span> Proxy Settings</h2>
+                
+                <div class="info">
+                    <strong><span class="emoji">ℹ️</span> Info:</strong> Each account now supports individual proxy settings. All connections for the account (Telegram, HTTP requests, TON RPC) will use the specified proxy.
+                </div>
+                
+                <h3><span class="emoji">🔧</span> Setting up proxy for an account</h3>
+                <p>In the <code>config.json</code> file, add the following fields for each account:</p>
+                
+                <div class="code-block">
+{
+  "accounts": [
+    {
+      "name": "Account 1 with proxy",
+      "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
+      // ... other account settings
+    }
+  ]
+}
+                </div>
+                
+                <h3><span class="emoji">📝</span> Proxy URL format</h3>
+                <p>Two formats are supported:</p>
+                
+                <h4>1. Without authentication: <code>host:port</code></h4>
+                <div class="code-block">
+"proxy_url": "192.168.1.100:1080"
+                </div>
+                
+                <h4>2. With authentication: <code>host:port:username:password</code></h4>
+                <div class="code-block">
+"proxy_url": "proxy.example.com:1080:myuser:mypass"
+                </div>
+                
+                <h3><span class="emoji">⚙️</span> Proxy parameters</h3>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>use_proxy</code></td>
+                        <td>boolean</td>
+                        <td>Enable/disable proxy for the account</td>
+                    </tr>
+                    <tr>
+                        <td><code>proxy_url</code></td>
+                        <td>string</td>
+                        <td>Proxy address in the specified format</td>
+                    </tr>
+                </table>
+                
+                <h3><span class="emoji">🔗</span> What uses proxy</h3>
+                <p>When proxy is enabled for an account, the following go through it:</p>
+                <ul>
+                    <li><span class="emoji">✅</span> Telegram connections (authorization, token retrieval)</li>
+                    <li><span class="emoji">✅</span> HTTP requests to API (sticker purchases)</li>
+                    <li><span class="emoji">✅</span> TON RPC connections (transaction sending)</li>
+                    <li><span class="emoji">✅</span> New collection monitoring requests</li>
+                </ul>
+                
+                <h3><span class="emoji">📋</span> Example configuration</h3>
+                <div class="code-block">
+{
+  "api_id": 12345,
+  "api_hash": "your_api_hash",
+  "accounts": [
+    {
+      "name": "Account 1 - Direct",
+      "phone_number": "+1234567890",
+      "seed_phrase": "your 24 word seed phrase here",
+      "use_proxy": false,
+      "threads": 1,
+      "collection": 25,
+      "character": 1,
+      "currency": "TON",
+      "count": 5
+    },
+    {
+      "name": "Account 2 - With Proxy",
+      "phone_number": "+1234567891", 
+      "seed_phrase": "another 24 word seed phrase here",
+      "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
+      "threads": 1,
+      "collection": 25,
+      "character": 1,
+      "currency": "TON",
+      "count": 5
+    }
+  ]
+}
+                </div>
+                
+                <h3><span class="emoji">🛡️</span> Supported protocols</h3>
+                <ul>
+                    <li><strong>SOCKS5</strong> proxy (recommended)</li>
+                    <li><strong>HTTP</strong> proxy for web requests</li>
+                </ul>
+                
+                <h3><span class="emoji">📝</span> Notes</h3>
+                <div class="highlight">
+                    <ul>
+                        <li>Each account can have its own proxy or work without proxy</li>
+                        <li>Proxy settings apply to all types of account connections</li>
+                        <li>In case of proxy connection error, the application will show a corresponding message</li>
+                        <li>TON RPC connections support proxy partially (liteclient library limitation)</li>
+                    </ul>
+                </div>
             </div>
             
             <div class="section" id="modes-en">

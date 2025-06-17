@@ -160,8 +160,15 @@ func (bs *BuyerService) Start() error {
 				return bs.tokenManager.RefreshTokenOnError(accountName, statusCode)
 			}
 
+			// Create HTTP client with account-specific proxy settings
+			monitorClient, err := client.NewForAccount(account.UseProxy, account.ProxyURL)
+			if err != nil {
+				bs.logChan <- fmt.Sprintf("❌ Error creating HTTP client for snipe monitor '%s': %v", account.Name, err)
+				continue
+			}
+
 			// Create and launch snipe monitor
-			snipeMonitor := monitor.NewSnipeMonitor(&account, client.New(), purchaseCallback, tokenCallback, tokenRefreshCallback)
+			snipeMonitor := monitor.NewSnipeMonitor(&account, monitorClient, purchaseCallback, tokenCallback, tokenRefreshCallback)
 			bs.snipeMonitors = append(bs.snipeMonitors, snipeMonitor)
 
 			if err := snipeMonitor.Start(); err != nil {
@@ -173,14 +180,10 @@ func (bs *BuyerService) Start() error {
 				wg.Add(1)
 				workerCounter++
 
-				accountWorker := &AccountWorker{
-					client:           client.New(),
-					account:          account,
-					testMode:         bs.config.TestMode,
-					testAddr:         bs.config.TestAddress,
-					workerID:         workerCounter,
-					transactionCount: 0,
-					isActive:         true,
+				accountWorker, err := createAccountWorker(account, bs.config.TestMode, bs.config.TestAddress, workerCounter)
+				if err != nil {
+					bs.logChan <- fmt.Sprintf("❌ Error creating account worker for account '%s': %v", account.Name, err)
+					continue
 				}
 
 				go bs.accountWorker(ctx, &wg, accountWorker, accountIndex+1)
@@ -700,12 +703,16 @@ func (bs *BuyerService) makeOrderRequest(account config.Account, bearerToken str
 	bs.statistics.TotalRequests++
 	bs.mu.Unlock()
 
-	httpClient := client.New()
+	// Create HTTP client with account-specific proxy settings
+	httpClient, err := client.NewForAccount(account.UseProxy, account.ProxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client for account %s: %v", account.Name, err)
+	}
 
 	// Check if seed phrase exists for sending transactions
 	if account.SeedPhrase != "" {
-		// Use new method with TON transaction sending
-		return httpClient.BuyStickersAndPay(
+		// Use new method with TON transaction sending and proxy support
+		return httpClient.BuyStickersAndPayWithProxy(
 			bearerToken,
 			account.Collection,
 			account.Character,
@@ -714,6 +721,8 @@ func (bs *BuyerService) makeOrderRequest(account config.Account, bearerToken str
 			account.SeedPhrase,
 			bs.config.TestMode,
 			bs.config.TestAddress,
+			account.UseProxy,
+			account.ProxyURL,
 		)
 	} else {
 		// Use regular method without sending transactions
@@ -733,12 +742,16 @@ func (bs *BuyerService) makeSnipeOrderRequest(account config.Account, bearerToke
 	bs.statistics.TotalRequests++
 	bs.mu.Unlock()
 
-	httpClient := client.New()
+	// Create HTTP client with account-specific proxy settings
+	httpClient, err := client.NewForAccount(account.UseProxy, account.ProxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client for account %s: %v", account.Name, err)
+	}
 
 	// Check if seed phrase exists for sending transactions
 	if account.SeedPhrase != "" {
-		// Use new method with TON transaction sending
-		return httpClient.BuyStickersAndPay(
+		// Use new method with TON transaction sending and proxy support
+		return httpClient.BuyStickersAndPayWithProxy(
 			bearerToken,
 			collectionID,
 			characterID,
@@ -747,6 +760,8 @@ func (bs *BuyerService) makeSnipeOrderRequest(account config.Account, bearerToke
 			account.SeedPhrase,
 			bs.config.TestMode,
 			bs.config.TestAddress,
+			account.UseProxy,
+			account.ProxyURL,
 		)
 	} else {
 		// Use regular method without sending transactions
@@ -758,4 +773,23 @@ func (bs *BuyerService) makeSnipeOrderRequest(account config.Account, bearerToke
 			account.Count,
 		)
 	}
+}
+
+// createAccountWorker creates AccountWorker with proxy support
+func createAccountWorker(account config.Account, testMode bool, testAddr string, workerID int) (*AccountWorker, error) {
+	// Create HTTP client with account-specific proxy settings
+	httpClient, err := client.NewForAccount(account.UseProxy, account.ProxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client for account %s: %v", account.Name, err)
+	}
+
+	return &AccountWorker{
+		client:           httpClient,
+		account:          account,
+		testMode:         testMode,
+		testAddr:         testAddr,
+		workerID:         workerID,
+		transactionCount: 0,
+		isActive:         true,
+	}, nil
 }
