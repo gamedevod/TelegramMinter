@@ -265,7 +265,11 @@ func (bs *BuyerService) accountWorker(ctx context.Context, wg *sync.WaitGroup, w
 			}
 
 			bs.performAccountBuy(worker, accountNum)
-			time.Sleep(100 * time.Millisecond) // Small delay between requests
+			delay := time.Duration(worker.account.PurchaseDelayMs)
+			if delay <= 0 {
+				delay = 100
+			}
+			time.Sleep(delay * time.Millisecond)
 		}
 	}
 }

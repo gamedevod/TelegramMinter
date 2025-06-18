@@ -126,6 +126,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
           "min": 1000000000,
           "max": 10000000000
         },
+        "monitor_delay_ms": 1000,
         "word_filter": ["keyword1", "keyword2"]
       }
     }
@@ -162,6 +163,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
           "min": 1000000000,
           "max": 10000000000
         },
+        "monitor_delay_ms": 1000,
         "word_filter": ["azuki", "pokemon", "cryptopunks"]
       }
     }
@@ -322,6 +324,7 @@ When proxy is enabled for an account, the following go through it:
       "min": 500000000,
       "max": 5000000000
     },
+    "monitor_delay_ms": 1000,
     "word_filter": ["rare", "limited", "exclusive"]
   }
 }
@@ -371,6 +374,7 @@ If you want to automatically monitor and buy NEW collections as they appear, add
     "min": 1000000000,
     "max": 10000000000
   },
+  "monitor_delay_ms": 1000,
   "word_filter": ["possible pack names", "possible pack names 2"]
 }
 ```
@@ -403,6 +407,7 @@ If you want to mint specific collections immediately:
 - **`enabled`** - Enable snipe mode (true = monitor mode, false = direct mint mode)
 - **`supply_range`** - Range of sticker quantity (min-max)
 - **`price_range`** - Price range in nanotons (1 TON = 1000000000 nanotons)
+- **`monitor_delay_ms`** - Delay between monitoring checks (in milliseconds)
 - **`word_filter`** - List of words to search for in collection names
 
 ## 🎮 Application Menu Guide

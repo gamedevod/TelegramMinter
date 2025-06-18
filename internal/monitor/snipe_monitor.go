@@ -178,7 +178,14 @@ func (s *SnipeMonitor) initializeState() error {
 
 // monitorLoop is the main monitoring loop
 func (s *SnipeMonitor) monitorLoop() {
-	ticker := time.NewTicker(1 * time.Second)
+	delay := time.Duration(0)
+	if s.config.SnipeMonitor != nil {
+		delay = time.Duration(s.config.SnipeMonitor.MonitorDelayMs)
+	}
+	if delay <= 0 {
+		delay = 1000 // default ms
+	}
+	ticker := time.NewTicker(delay * time.Millisecond)
 	defer ticker.Stop()
 
 	for {

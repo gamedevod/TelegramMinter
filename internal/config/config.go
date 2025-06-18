@@ -25,6 +25,9 @@ type Account struct {
 	Count           int    `json:"count"`
 	MaxTransactions int    `json:"max_transactions"` // Maximum number of successful transactions
 
+	// Delay for purchases (in milliseconds)
+	PurchaseDelayMs int `json:"purchase_delay_ms,omitempty"`
+
 	// Proxy settings (individual for each account)
 	UseProxy bool   `json:"use_proxy,omitempty"` // Whether to use proxy for this account
 	ProxyURL string `json:"proxy_url,omitempty"` // Proxy URL in format host:port:user:pass
@@ -39,6 +42,9 @@ type SnipeMonitorConfig struct {
 	SupplyRange *Range   `json:"supply_range,omitempty"` // Supply range
 	PriceRange  *Range   `json:"price_range,omitempty"`  // Price range (in nanotons)
 	WordFilter  []string `json:"word_filter,omitempty"`  // Word filter for collection name
+
+	// Delay between monitor requests (in milliseconds)
+	MonitorDelayMs int `json:"monitor_delay_ms,omitempty"`
 }
 
 // Range structure for specifying range
@@ -87,9 +93,11 @@ func Default() *Config {
 				Character:       1,
 				Currency:        "TON",
 				Count:           5,
-				MaxTransactions: 10, // Default 10 transactions
+				MaxTransactions: 10,
+				PurchaseDelayMs: 100,
 				UseProxy:        false,
 				ProxyURL:        "", // Example: "proxy.example.com:1080:username:password"
+				SnipeMonitor:    &SnipeMonitorConfig{Enabled: false, MonitorDelayMs: 1000},
 			},
 			{
 				Name:            "Account 2 (with proxy example)",
@@ -102,8 +110,10 @@ func Default() *Config {
 				Currency:        "TON",
 				Count:           5,
 				MaxTransactions: 10,
-				UseProxy:        false,                                      // Set to true to enable proxy
-				ProxyURL:        "proxy.example.com:1080:username:password", // Example proxy URL
+				PurchaseDelayMs: 100,
+				UseProxy:        false,
+				ProxyURL:        "proxy.example.com:1080:username:password",
+				SnipeMonitor:    &SnipeMonitorConfig{Enabled: false, MonitorDelayMs: 1000},
 			},
 		},
 	}

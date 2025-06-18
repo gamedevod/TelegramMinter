@@ -7,10 +7,9 @@
   "accounts": [
     {
       "name": "Acc 1",
-      "auth_token": "",
-      "api_id": 1234,
+      "api_id": 123123,
       "api_hash": "",
-      "phone_number": "+123",
+      "phone_number": "+123123123123",
       "seed_phrase": "",
       "threads": 1,
       "collection": 1,
@@ -18,7 +17,8 @@
       "currency": "TON",
       "count": 1,
       "max_transactions": 1,
-      "proxy_url": "host:port:user:pass or empty  for disblse",
+      "purchase_delay_ms": 100,
+      "use_proxy": true,
       "snipe_monitor": {
         "enabled": false,
         "supply_range": {
@@ -29,6 +29,7 @@
           "min": 1,
           "max": 10000000000
         },
+        "monitor_delay_ms": 1000,
         "word_filter": [
           "azuki",
           "smeshariki",
