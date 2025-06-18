@@ -365,6 +365,7 @@
       "count": 1,
       "threads": 1,
       "max_transactions": 0,
+      "purchase_delay_ms": 100,
       "seed_phrase": "",
       "snipe_monitor": {
         "enabled": false,
@@ -402,6 +403,7 @@
       "count": 1,
       "threads": 1,
       "max_transactions": 10,
+      "purchase_delay_ms": 100,
       "seed_phrase": "word1 word2 word3 ... word24",
       "snipe_monitor": {
         "enabled": false,
@@ -486,6 +488,10 @@
                     <tr>
                         <td><code>max_transactions</code></td>
                         <td>Максимум транзакций (0 = без лимита)</td>
+                    </tr>
+                    <tr>
+                        <td><code>purchase_delay_ms</code></td>
+                        <td>Задержка между запросами покупки в миллисекундах (по умолчанию: 100)</td>
                     </tr>
                     <tr>
                         <td><code>seed_phrase</code></td>
@@ -1086,6 +1092,7 @@
       "count": 1,
       "threads": 1,
       "max_transactions": 0,
+      "purchase_delay_ms": 100,
       "seed_phrase": "",
       "snipe_monitor": {
         "enabled": false,
@@ -1123,6 +1130,7 @@
       "count": 1,
       "threads": 1,
       "max_transactions": 10,
+      "purchase_delay_ms": 100,
       "seed_phrase": "word1 word2 word3 ... word24",
       "snipe_monitor": {
         "enabled": false,
@@ -1207,6 +1215,10 @@
                     <tr>
                         <td><code>max_transactions</code></td>
                         <td>Maximum transactions (0 = no limit)</td>
+                    </tr>
+                    <tr>
+                        <td><code>purchase_delay_ms</code></td>
+                        <td>Delay between purchase requests in milliseconds (default: 100)</td>
                     </tr>
                     <tr>
                         <td><code>seed_phrase</code></td>

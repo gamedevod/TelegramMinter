@@ -115,6 +115,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
       "count": 1,
       "threads": 1,
       "max_transactions": 0,
+      "purchase_delay_ms": 100,
       "seed_phrase": "",
       "snipe_monitor": {
         "enabled": false,
@@ -152,6 +153,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
       "count": 1,
       "threads": 1,
       "max_transactions": 10,
+      "purchase_delay_ms": 100,
       "seed_phrase": "word1 word2 word3 ... word24",
       "snipe_monitor": {
         "enabled": false,
@@ -191,6 +193,7 @@ In the `config.json` file you will see an empty template. Fill it with your data
 - **`count`** - Number of stickers to buy at once
 - **`threads`** - Number of threads (recommended 1-3)
 - **`max_transactions`** - Maximum transactions (0 = no limit)
+- **`purchase_delay_ms`** - Delay between purchase requests in milliseconds (default: 100)
 - **`seed_phrase`** - TON wallet seed phrase (12-24 words separated by spaces)
 - **`snipe_monitor`** - Snipe monitoring settings (optional)
 
