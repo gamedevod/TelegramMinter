@@ -540,32 +540,24 @@
                 </div>
                 
                 <h3><span class="emoji">🔧</span> Настройка прокси для аккаунта</h3>
-                <p>В файле <code>config.json</code> добавьте следующие поля для каждого аккаунта:</p>
                 
+                <h4>1. В config.json:</h4>
+                <p>Установите <code>"use_proxy": true</code> для аккаунтов, которые должны использовать прокси</p>
+                
+                <h4>2. Создайте proxies.txt:</h4>
+                <p>Добавьте список прокси в корневую папку (один прокси на строку)</p>
+                
+                <h3><span class="emoji">📝</span> Формат прокси в proxies.txt</h3>
+                <ul>
+                    <li><strong>Без аутентификации:</strong> <code>host:port</code></li>
+                    <li><strong>С аутентификацией:</strong> <code>host:port:username:password</code></li>
+                </ul>
+                
+                <h4>Пример proxies.txt:</h4>
                 <div class="code-block">
-{
-  "accounts": [
-    {
-      "name": "Аккаунт 1 с прокси",
-      "use_proxy": true,
-      "proxy_url": "proxy.example.com:1080:username:password",
-      // ... остальные настройки аккаунта
-    }
-  ]
-}
-                </div>
-                
-                <h3><span class="emoji">📝</span> Формат URL прокси</h3>
-                <p>Поддерживается два формата:</p>
-                
-                <h4>1. Без аутентификации: <code>host:port</code></h4>
-                <div class="code-block">
-"proxy_url": "192.168.1.100:1080"
-                </div>
-                
-                <h4>2. С аутентификацией: <code>host:port:username:password</code></h4>
-                <div class="code-block">
-"proxy_url": "proxy.example.com:1080:myuser:mypass"
+192.168.1.100:1080
+proxy.example.com:1080:myuser:mypass
+another.proxy.com:3128
                 </div>
                 
                 <h3><span class="emoji">⚙️</span> Параметры прокси</h3>
@@ -618,7 +610,6 @@
       "phone_number": "+79123456790", 
       "seed_phrase": "another 24 word seed phrase here",
       "use_proxy": true,
-      "proxy_url": "proxy.example.com:1080:username:password",
       "threads": 1,
       "collection": 25,
       "character": 1,
@@ -1297,30 +1288,23 @@
                 <h3><span class="emoji">🔧</span> Setting up proxy for an account</h3>
                 <p>In the <code>config.json</code> file, add the following fields for each account:</p>
                 
-                <div class="code-block">
-{
-  "accounts": [
-    {
-      "name": "Account 1 with proxy",
-      "use_proxy": true,
-      "proxy_url": "proxy.example.com:1080:username:password",
-      // ... other account settings
-    }
-  ]
-}
-                </div>
+                <h4>1. In config.json:</h4>
+                <p>Set <code>"use_proxy": true</code> for accounts that should use proxy</p>
                 
-                <h3><span class="emoji">📝</span> Proxy URL format</h3>
-                <p>Two formats are supported:</p>
+                <h4>2. Create proxies.txt:</h4>
+                <p>Add proxy list in the root folder (one proxy per line)</p>
                 
-                <h4>1. Without authentication: <code>host:port</code></h4>
-                <div class="code-block">
-"proxy_url": "192.168.1.100:1080"
-                </div>
+                <h3><span class="emoji">📝</span> Proxy format in proxies.txt</h3>
+                <ul>
+                    <li><strong>Without authentication:</strong> <code>host:port</code></li>
+                    <li><strong>With authentication:</strong> <code>host:port:username:password</code></li>
+                </ul>
                 
-                <h4>2. With authentication: <code>host:port:username:password</code></h4>
+                <h4>Example proxies.txt:</h4>
                 <div class="code-block">
-"proxy_url": "proxy.example.com:1080:myuser:mypass"
+192.168.1.100:1080
+proxy.example.com:1080:myuser:mypass
+another.proxy.com:3128
                 </div>
                 
                 <h3><span class="emoji">⚙️</span> Proxy parameters</h3>
@@ -1373,7 +1357,6 @@
       "phone_number": "+1234567891", 
       "seed_phrase": "another 24 word seed phrase here",
       "use_proxy": true,
-      "proxy_url": "proxy.example.com:1080:username:password",
       "threads": 1,
       "collection": 25,
       "character": 1,

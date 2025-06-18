@@ -211,34 +211,19 @@ Each account now supports individual proxy settings. All connections for the acc
 
 ### Setting up proxy for an account
 
-In the `config.json` file, add the following fields for each account:
+1. **In config.json**: Set `"use_proxy": true` for accounts that should use proxy
+2. **Create proxies.txt**: Add proxy list in the root folder (one proxy per line)
 
-```json
-{
-  "accounts": [
-    {
-      "name": "Account 1 with proxy",
-      "use_proxy": true,
-      "proxy_url": "proxy.example.com:1080:username:password",
-      // ... other account settings
-    }
-  ]
-}
+**Proxy format in proxies.txt:**
+- Without authentication: `host:port`
+- With authentication: `host:port:username:password`
+
+**Example proxies.txt:**
 ```
-
-### Proxy URL format
-
-Two formats are supported:
-
-1. **Without authentication:** `host:port`
-   ```json
-   "proxy_url": "192.168.1.100:1080"
-   ```
-
-2. **With authentication:** `host:port:username:password`
-   ```json
-   "proxy_url": "proxy.example.com:1080:myuser:mypass"
-   ```
+192.168.1.100:1080
+proxy.example.com:1080:myuser:mypass
+another.proxy.com:3128
+```
 
 ### Proxy parameters
 
@@ -278,7 +263,6 @@ When proxy is enabled for an account, the following go through it:
       "phone_number": "+1234567891", 
       "seed_phrase": "another 24 word seed phrase here",
       "use_proxy": true,
-      "proxy_url": "proxy.example.com:1080:username:password",
       "threads": 1,
       "collection": 25,
       "character": 1,
