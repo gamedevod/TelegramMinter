@@ -44,8 +44,7 @@ type BuyerService struct {
 
 	// Token manager
 	tokenManager *TokenManager
-
-	// Separate token storage
+	// Proxy/token storage
 	tokenStorage *storage.TokenStorage
 
 	// Snipe transaction counters per account
@@ -98,7 +97,7 @@ func (bs *BuyerService) Start() error {
 	bs.cancel = cancel
 	bs.isRunning = true
 
-	// Create token manager (recreate with current storage reference)
+	// Recreate token manager with current storage reference
 	bs.tokenManager = NewTokenManager(bs.config, bs.tokenStorage)
 
 	// Initialize token cache

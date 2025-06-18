@@ -122,6 +122,10 @@ func (c *CLI) initializeConfig() error {
 				fmt.Printf("🔄 Migrated token for account '%s' to tokens.json\n", account.Name)
 			}
 		}
+
+		// Включаем обязательное использование прокси
+		cfg.Accounts[i].UseProxy = true
+		cfg.Accounts[i].ProxyURL = "" // будет выбран случайный из proxies.txt
 	}
 
 	c.config = cfg
@@ -216,18 +220,6 @@ func (c *CLI) validateAccount(num int, account config.Account) []string {
 	// Check threads
 	if account.Threads <= 0 {
 		errors = append(errors, prefix+": threads must be greater than 0")
-	}
-
-	// Check proxy settings
-	if account.UseProxy {
-		if account.ProxyURL == "" {
-			errors = append(errors, prefix+": use_proxy is enabled but proxy_url is not specified")
-		} else {
-			// Validate proxy URL format
-			if err := validateProxyURL(account.ProxyURL); err != nil {
-				errors = append(errors, prefix+": "+err.Error())
-			}
-		}
 	}
 
 	// Check collection and character

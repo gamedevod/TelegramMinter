@@ -10,15 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"stickersbot/internal/client"
-	"stickersbot/internal/constants"
-
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
-	"golang.org/x/net/proxy"
+
+	netproxy "golang.org/x/net/proxy"
+
+	"stickersbot/internal/client"
+	"stickersbot/internal/constants"
+	"stickersbot/internal/proxy"
 )
 
 // AuthService structure for Telegram authorization
@@ -40,6 +42,11 @@ func NewAuthService(apiId int, apiHash, phoneNumber, sessionFile, twoFactorPassw
 
 // NewAuthServiceWithProxy creates a new authorization service with proxy support
 func NewAuthServiceWithProxy(apiId int, apiHash, phoneNumber, sessionFile, twoFactorPassword string, useProxy bool, proxyURL string) *AuthService {
+	if useProxy {
+		if proxyURL == "" {
+			proxyURL = proxy.GetRandom()
+		}
+	}
 	return &AuthService{
 		APIId:             apiId,
 		APIHash:           apiHash,
@@ -369,12 +376,12 @@ func createProxyDialFunc(proxyURL string) (func(ctx context.Context, network, ad
 
 	if len(parts) == 2 {
 		// No authentication - use SOCKS5 without auth
-		dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
+		dialer, err := netproxy.SOCKS5("tcp", proxyAddr, nil, netproxy.Direct)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create SOCKS5 proxy: %v", err)
 		}
 
-		if contextDialer, ok := dialer.(proxy.ContextDialer); ok {
+		if contextDialer, ok := dialer.(netproxy.ContextDialer); ok {
 			return contextDialer.DialContext, nil
 		}
 
@@ -386,17 +393,17 @@ func createProxyDialFunc(proxyURL string) (func(ctx context.Context, network, ad
 		// With authentication
 		user := parts[2]
 		pass := parts[3]
-		auth := &proxy.Auth{
+		auth := &netproxy.Auth{
 			User:     user,
 			Password: pass,
 		}
 
-		dialer, err := proxy.SOCKS5("tcp", proxyAddr, auth, proxy.Direct)
+		dialer, err := netproxy.SOCKS5("tcp", proxyAddr, auth, netproxy.Direct)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create SOCKS5 proxy with auth: %v", err)
 		}
 
-		if contextDialer, ok := dialer.(proxy.ContextDialer); ok {
+		if contextDialer, ok := dialer.(netproxy.ContextDialer); ok {
 			return contextDialer.DialContext, nil
 		}
 

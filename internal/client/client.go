@@ -10,6 +10,8 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
+
+	"stickersbot/internal/proxy"
 )
 
 // APIResponse structure for successful API response
@@ -30,34 +32,16 @@ type APIErrorResponse struct {
 }
 
 // HTTPClient wrapper for tls-client
-type HTTPClient struct {
-	client tls_client.HttpClient
-}
+type HTTPClient struct{}
 
 // New creates a new HTTP client without proxy
 func New() *HTTPClient {
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(30),
-		tls_client.WithClientProfile(profiles.Chrome_120),
-		tls_client.WithRandomTLSExtensionOrder(),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
-	}
-
-	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
-	if err != nil {
-		panic(fmt.Sprintf("Error creating HTTP client: %v", err))
-	}
-
-	return &HTTPClient{
-		client: client,
-	}
+	return &HTTPClient{}
 }
 
 // NewWithProxy creates a new HTTP client with proxy support
 // proxyURL format: host:port:user:pass
-func NewWithProxy(proxyURL string) (*HTTPClient, error) {
+func newTLSClient(proxyURL string) (tls_client.HttpClient, error) {
 	jar := tls_client.NewCookieJar()
 
 	options := []tls_client.HttpClientOption{
@@ -68,23 +52,22 @@ func NewWithProxy(proxyURL string) (*HTTPClient, error) {
 		tls_client.WithCookieJar(jar),
 	}
 
-	// Parse proxy URL if provided
-	if proxyURL != "" {
-		proxyURLParsed, err := parseProxyURL(proxyURL)
-		if err != nil {
-			return nil, fmt.Errorf("invalid proxy URL: %v", err)
-		}
-		options = append(options, tls_client.WithProxyUrl(proxyURLParsed))
+	// Если proxyURL пустой, берём случайный
+	if proxyURL == "" {
+		proxyURL = proxy.GetRandom()
 	}
+
+	proxyURLParsed, err := parseProxyURL(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid proxy URL: %v", err)
+	}
+	options = append(options, tls_client.WithProxyUrl(proxyURLParsed))
 
 	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 	if err != nil {
 		return nil, fmt.Errorf("error creating HTTP client with proxy: %v", err)
 	}
-
-	return &HTTPClient{
-		client: client,
-	}, nil
+	return client, nil
 }
 
 // parseProxyURL parses proxy URL from format host:port:user:pass to standard URL
@@ -112,6 +95,8 @@ func parseProxyURL(proxyURL string) (string, error) {
 
 // Get performs a GET request
 func (c *HTTPClient) Get(url string, headers map[string]string) (*fhttp.Response, error) {
+	cli := c.getClient()
+
 	req, err := fhttp.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -122,11 +107,13 @@ func (c *HTTPClient) Get(url string, headers map[string]string) (*fhttp.Response
 		req.Header.Set(key, value)
 	}
 
-	return c.client.Do(req)
+	return cli.Do(req)
 }
 
 // Post performs a POST request
 func (c *HTTPClient) Post(url string, body string, headers map[string]string) (*fhttp.Response, error) {
+	cli := c.getClient()
+
 	req, err := fhttp.NewRequest("POST", url, strings.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -137,7 +124,7 @@ func (c *HTTPClient) Post(url string, body string, headers map[string]string) (*
 		req.Header.Set(key, value)
 	}
 
-	return c.client.Do(req)
+	return cli.Do(req)
 }
 
 // BuyStickersResponse response structure for sticker purchase
@@ -191,7 +178,7 @@ func (c *HTTPClient) BuyStickers(authToken string, collection, character int, cu
 	}
 
 	// Execute request
-	resp, err := c.client.Do(req)
+	resp, err := c.getClient().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error executing request: %v", err)
 	}
@@ -298,8 +285,14 @@ func (c *HTTPClient) BuyStickersAndPayWithProxy(authToken string, collection, ch
 
 // NewForAccount creates HTTP client with account-specific proxy settings
 func NewForAccount(useProxy bool, proxyURL string) (*HTTPClient, error) {
-	if useProxy && proxyURL != "" {
-		return NewWithProxy(proxyURL)
-	}
 	return New(), nil
+}
+
+// helper to get tls-client each request
+func (c *HTTPClient) getClient() tls_client.HttpClient {
+	cli, err := newTLSClient("") // random proxy
+	if err != nil {
+		panic(err)
+	}
+	return cli
 }
