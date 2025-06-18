@@ -115,7 +115,6 @@ In the `config.json` file you will see an empty template. Fill it with your data
       "count": 1,
       "threads": 1,
       "max_transactions": 0,
-      "purchase_delay_ms": 100,
       "seed_phrase": "",
       "snipe_monitor": {
         "enabled": false,
@@ -127,7 +126,6 @@ In the `config.json` file you will see an empty template. Fill it with your data
           "min": 1000000000,
           "max": 10000000000
         },
-        "monitor_delay_ms": 1000,
         "word_filter": ["keyword1", "keyword2"]
       }
     }
@@ -153,7 +151,6 @@ In the `config.json` file you will see an empty template. Fill it with your data
       "count": 1,
       "threads": 1,
       "max_transactions": 10,
-      "purchase_delay_ms": 100,
       "seed_phrase": "word1 word2 word3 ... word24",
       "snipe_monitor": {
         "enabled": false,
@@ -165,7 +162,6 @@ In the `config.json` file you will see an empty template. Fill it with your data
           "min": 1000000000,
           "max": 10000000000
         },
-        "monitor_delay_ms": 1000,
         "word_filter": ["azuki", "pokemon", "cryptopunks"]
       }
     }
@@ -193,17 +189,8 @@ In the `config.json` file you will see an empty template. Fill it with your data
 - **`count`** - Number of stickers to buy at once
 - **`threads`** - Number of threads (recommended 1-3)
 - **`max_transactions`** - Maximum transactions (0 = no limit)
-- **`purchase_delay_ms`** - Delay between purchase requests in milliseconds (default: 100)
 - **`seed_phrase`** - TON wallet seed phrase (12-24 words separated by spaces)
 - **`snipe_monitor`** - Snipe monitoring settings (optional)
-
-### Snipe monitoring settings (`snipe_monitor`):
-
-- **`enabled`** - Enable snipe mode (true = monitor new collections, false = direct purchase)
-- **`supply_range`** - Range of sticker quantity (min-max)
-- **`price_range`** - Price range in nanotons (1 TON = 1000000000 nanotons)
-- **`monitor_delay_ms`** - Delay between monitoring requests (in milliseconds)
-- **`word_filter`** - List of words to search for in collection names
 
 ## 🌐 Proxy Settings
 
@@ -211,24 +198,39 @@ Each account now supports individual proxy settings. All connections for the acc
 
 ### Setting up proxy for an account
 
-1. **In config.json**: Set `"use_proxy": true` for accounts that should use proxy
-2. **Create proxies.txt**: Add proxy list in the root folder (one proxy per line)
+In the `config.json` file, add the following fields for each account:
 
-**Proxy format in proxies.txt:**
-- Without authentication: `host:port`
-- With authentication: `host:port:username:password`
+```json
+{
+  "accounts": [
+    {
+      "name": "Account 1 with proxy",
+      "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
+      // ... other account settings
+    }
+  ]
+}
+```
 
-**Example proxies.txt:**
-```
-192.168.1.100:1080
-proxy.example.com:1080:myuser:mypass
-another.proxy.com:3128
-```
+### Proxy URL format
+
+Two formats are supported:
+
+1. **Without authentication:** `host:port`
+   ```json
+   "proxy_url": "192.168.1.100:1080"
+   ```
+
+2. **With authentication:** `host:port:username:password`
+   ```json
+   "proxy_url": "proxy.example.com:1080:myuser:mypass"
+   ```
 
 ### Proxy parameters
 
 - `use_proxy` (boolean) - enable/disable proxy for the account
-- Proxy list is loaded from `proxies.txt` file (one proxy per line)
+- `proxy_url` (string) - proxy address in the specified format
 
 ### What uses proxy
 
@@ -263,6 +265,7 @@ When proxy is enabled for an account, the following go through it:
       "phone_number": "+1234567891", 
       "seed_phrase": "another 24 word seed phrase here",
       "use_proxy": true,
+      "proxy_url": "proxy.example.com:1080:username:password",
       "threads": 1,
       "collection": 25,
       "character": 1,
@@ -319,7 +322,6 @@ When proxy is enabled for an account, the following go through it:
       "min": 500000000,
       "max": 5000000000
     },
-    "monitor_delay_ms": 1000,
     "word_filter": ["rare", "limited", "exclusive"]
   }
 }
@@ -369,7 +371,6 @@ If you want to automatically monitor and buy NEW collections as they appear, add
     "min": 1000000000,
     "max": 10000000000
   },
-  "monitor_delay_ms": 1000,
   "word_filter": ["possible pack names", "possible pack names 2"]
 }
 ```
@@ -402,7 +403,6 @@ If you want to mint specific collections immediately:
 - **`enabled`** - Enable snipe mode (true = monitor mode, false = direct mint mode)
 - **`supply_range`** - Range of sticker quantity (min-max)
 - **`price_range`** - Price range in nanotons (1 TON = 1000000000 nanotons)
-- **`monitor_delay_ms`** - Delay between monitoring checks (in milliseconds)
 - **`word_filter`** - List of words to search for in collection names
 
 ## 🎮 Application Menu Guide
