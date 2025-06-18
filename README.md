@@ -197,6 +197,14 @@ In the `config.json` file you will see an empty template. Fill it with your data
 - **`seed_phrase`** - TON wallet seed phrase (12-24 words separated by spaces)
 - **`snipe_monitor`** - Snipe monitoring settings (optional)
 
+### Snipe monitoring settings (`snipe_monitor`):
+
+- **`enabled`** - Enable snipe mode (true = monitor new collections, false = direct purchase)
+- **`supply_range`** - Range of sticker quantity (min-max)
+- **`price_range`** - Price range in nanotons (1 TON = 1000000000 nanotons)
+- **`monitor_delay_ms`** - Delay between monitoring requests (in milliseconds)
+- **`word_filter`** - List of words to search for in collection names
+
 ## 🌐 Proxy Settings
 
 Each account now supports individual proxy settings. All connections for the account (Telegram, HTTP requests, TON RPC) will use the specified proxy.
@@ -235,7 +243,7 @@ Two formats are supported:
 ### Proxy parameters
 
 - `use_proxy` (boolean) - enable/disable proxy for the account
-- `proxy_url` (string) - proxy address in the specified format
+- Proxy list is loaded from `proxies.txt` file (one proxy per line)
 
 ### What uses proxy
 
